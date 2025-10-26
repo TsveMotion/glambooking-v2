@@ -3,6 +3,8 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { GoogleCalendarService, bookingToCalendarEvent } from '@/lib/google-calendar'
 
+export const runtime = 'nodejs'
+
 export async function POST(req: NextRequest) {
   try {
     const { userId } = auth()
