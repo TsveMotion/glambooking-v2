@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 
+export const runtime = 'nodejs'
+
 const ADMIN_EMAIL = 'kristiyan@tsvweb.com'
 
 export async function GET(req: NextRequest) {
