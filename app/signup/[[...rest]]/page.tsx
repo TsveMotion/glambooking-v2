@@ -52,9 +52,9 @@ export default function SignupPage() {
 
   const fetchInvitationDetails = async (invitationId: string) => {
     try {
-      const response = await fetch(`/api/business/team/invitation/${invitationId}`)
-      if (response.ok) {
-        const data = await response.json()
+      const inviteResponse = await fetch(`/api/invitation/${invitationId}`)
+      if (inviteResponse.ok) {
+        const data = await inviteResponse.json()
         setInvitationData({
           businessName: data.businessName,
           role: data.role,
@@ -160,7 +160,10 @@ export default function SignupPage() {
             <SignUp 
               routing="path"
               path="/signup"
-              fallbackRedirectUrl="/staff/welcome"
+              fallbackRedirectUrl={inviteToken ? `/staff/onboarding?invite=${inviteToken}` : "/business/dashboard"}
+              initialValues={{
+                emailAddress: invitationData?.email || ""
+              }}
               appearance={{
                 elements: {
                   formButtonPrimary: 

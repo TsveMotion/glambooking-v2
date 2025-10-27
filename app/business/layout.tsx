@@ -20,7 +20,8 @@ import {
   LogOut,
   UserPlus,
   CreditCard,
-  Banknote
+  Banknote,
+  HelpCircle
 } from 'lucide-react'
 
 interface BusinessLayoutProps {
@@ -55,17 +56,38 @@ export default function BusinessLayout({ children }: BusinessLayoutProps) {
     return null
   }
 
-  const sidebarItems = [
-    { icon: Home, label: 'Dashboard', href: '/business/dashboard' },
-    { icon: Calendar, label: 'Calendar', href: '/business/calendar' },
-    { icon: Users, label: 'Clients', href: '/business/clients' },
-    { icon: UserPlus, label: 'Team', href: '/business/team' },
-    { icon: Settings, label: 'Services', href: '/business/services' },
-    { icon: BarChart3, label: 'Analytics', href: '/business/analytics' },
-    { icon: Banknote, label: 'Payouts', href: '/business/payouts' },
-    { icon: CreditCard, label: 'Manage Plan', href: '/business/manage-plan' },
-    { icon: Bell, label: 'Notifications', href: '/business/notifications' },
-    { icon: UserCircle, label: 'Profile', href: '/business/profile' },
+  const sidebarSections = [
+    {
+      title: 'Overview',
+      items: [
+        { icon: Home, label: 'Dashboard', href: '/business/dashboard' },
+        { icon: Bell, label: 'Notifications', href: '/business/notifications' },
+      ]
+    },
+    {
+      title: 'Business',
+      items: [
+        { icon: Calendar, label: 'Calendar', href: '/business/calendar' },
+        { icon: Users, label: 'Clients', href: '/business/clients' },
+        { icon: UserPlus, label: 'Team', href: '/business/team' },
+        { icon: Settings, label: 'Services', href: '/business/services' },
+      ]
+    },
+    {
+      title: 'Analytics & Finance',
+      items: [
+        { icon: BarChart3, label: 'Analytics', href: '/business/analytics' },
+        { icon: Banknote, label: 'Payouts', href: '/business/payouts' },
+      ]
+    },
+    {
+      title: 'Admin',
+      items: [
+        { icon: CreditCard, label: 'Manage Plan', href: '/business/manage-plan' },
+        { icon: HelpCircle, label: 'Support', href: '/business/support' },
+        { icon: UserCircle, label: 'Profile', href: '/business/profile' },
+      ]
+    }
   ]
 
   return (
@@ -90,24 +112,33 @@ export default function BusinessLayout({ children }: BusinessLayoutProps) {
         </div>
         
         <nav className="mt-6 px-3">
-          <div className="space-y-1">
-            {sidebarItems.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <button
-                  key={item.label}
-                  onClick={() => router.push(item.href)}
-                  className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-glam-pink text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5 mr-3" />
-                  {item.label}
-                </button>
-              )
-            })}
+          <div className="space-y-6">
+            {sidebarSections.map((section) => (
+              <div key={section.title}>
+                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  {section.title}
+                </h3>
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const isActive = pathname === item.href
+                    return (
+                      <button
+                        key={item.label}
+                        onClick={() => router.push(item.href)}
+                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          isActive
+                            ? 'bg-glam-pink text-white'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <item.icon className="w-5 h-5 mr-3" />
+                        {item.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </nav>
         
@@ -154,6 +185,7 @@ export default function BusinessLayout({ children }: BusinessLayoutProps) {
                    pathname === '/business/payouts' ? 'Payouts' :
                    pathname === '/business/manage-plan' ? 'Manage Plan' :
                    pathname === '/business/notifications' ? 'Notifications' :
+                   pathname === '/business/support' ? 'Support' :
                    pathname === '/business/profile' ? 'Profile' : 'Business'}
                 </h1>
                 <p className="text-sm text-gray-500">Manage your beauty business</p>

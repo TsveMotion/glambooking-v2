@@ -7,6 +7,10 @@ export async function GET(
 ) {
   try {
     const invitationId = params.id
+    console.log('=== INVITATION LOOKUP API (FIXED) ===')
+    console.log('Looking for invitation ID:', invitationId)
+    console.log('Params object:', params)
+    console.log('Request URL:', req.url)
 
     const invitation = await prisma.teamInvitation.findUnique({
       where: { id: invitationId },
@@ -26,13 +30,17 @@ export async function GET(
     })
 
     if (!invitation) {
+      console.log('Invitation not found for ID:', invitationId)
       return NextResponse.json({ 
         error: 'Invitation not found' 
       }, { status: 404 })
     }
 
+    console.log('Found invitation:', invitation.id, invitation.status, invitation.expiresAt)
+
     // Check if invitation is expired
     if (invitation.expiresAt < new Date()) {
+      console.log('Invitation expired:', invitation.expiresAt)
       return NextResponse.json({ 
         error: 'Invitation has expired' 
       }, { status: 410 })
@@ -40,18 +48,20 @@ export async function GET(
 
     // Check if invitation is still pending
     if (invitation.status !== 'PENDING') {
+      console.log('Invitation status not pending:', invitation.status)
       return NextResponse.json({ 
         error: 'Invitation is no longer valid' 
       }, { status: 410 })
     }
 
+    console.log('Returning invitation data successfully')
     return NextResponse.json({
-      invitation: {
-        businessName: invitation.business.name,
-        role: invitation.role,
-        inviterName: `${invitation.inviter.firstName} ${invitation.inviter.lastName}`,
-        email: invitation.email
-      }
+      firstName: invitation.firstName,
+      lastName: invitation.lastName,
+      email: invitation.email,
+      role: invitation.role,
+      businessName: invitation.business.name,
+      inviterName: `${invitation.inviter.firstName} ${invitation.inviter.lastName}`
     })
 
   } catch (error) {

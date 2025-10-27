@@ -30,19 +30,27 @@ export async function POST(req: NextRequest) {
     const business = user.businesses[0]
 
     try {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const validEmail = user.email && emailRegex.test(user.email) ? user.email : undefined
+
       // Create Stripe Express account
       const account = await stripe.accounts.create({
         type: 'express',
         country: 'GB',
-        email: user.email || undefined,
+        email: validEmail,
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true }
         },
-        business_type: 'individual',
+        business_type: 'company',
+        company: {
+          name: business.name
+        },
         metadata: {
           businessId: business.id,
-          userId: user.id
+          userId: user.id,
+          businessName: business.name
         }
       })
 

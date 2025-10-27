@@ -227,7 +227,7 @@ export default function ManagePlanPage() {
                   </div>
                   <div>
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {currentPlan?.name} Plan
+                      {currentPlan?.name === 'Starter' ? 'User' : currentPlan?.name} Plan
                     </h3>
                     <p className="text-gray-600">
                       £{currentPlan?.price}/month • {currentPlan?.maxStaff === -1 ? 'Unlimited' : `Up to ${currentPlan?.maxStaff}`} team members
@@ -320,7 +320,7 @@ export default function ManagePlanPage() {
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-glam-pink">
-                    {businessData?.business?.staff?.length || 0}
+                    {(businessData?.business?.staff?.length || 0) + 1}
                   </div>
                   <div className="text-sm text-gray-600">
                     Team Members
@@ -331,7 +331,7 @@ export default function ManagePlanPage() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {businessData?.metrics?.monthlyBookings || 0}
+                    0
                   </div>
                   <div className="text-sm text-gray-600">
                     Bookings This Month

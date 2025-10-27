@@ -9,6 +9,36 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16'
 })
 
+interface PayoutData {
+  availableBalance: number
+  pendingBalance: number
+  totalEarnings: number
+  platformFees: number
+  payoutHistory: PayoutTransaction[]
+  nextPayoutDate: string
+  stripeConnected: boolean
+  bankAccount?: BankAccount
+  stripeAccountId?: string
+}
+
+interface PayoutTransaction {
+  id: string
+  amount: number
+  status: 'COMPLETED' | 'PENDING' | 'FAILED'
+  date: string
+  description: string
+  stripeTransferId?: string
+}
+
+interface BankAccount {
+  id: string
+  bankName: string
+  accountNumber: string
+  routingNumber: string
+  currency: string
+  status: string
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { userId } = auth()
@@ -33,9 +63,18 @@ export async function GET(req: NextRequest) {
 
     const business = user.businesses[0]
 
-    // Get all payments for this business
-    const payments = await prisma.payment.findMany({
+    // Get business settings for commission calculation
+    const customization = await prisma.businessCustomization.findUnique({
+      where: { businessId: business.id }
+    })
+
+    const settings = customization?.settings as any || {}
+    const staffCommissionRate = settings.staffCommissionRate || 60
+
+    // Get all completed payments for this business
+    const completedPayments = await prisma.payment.findMany({
       where: {
+        status: 'COMPLETED',
         booking: {
           businessId: business.id
         }
@@ -43,7 +82,8 @@ export async function GET(req: NextRequest) {
       include: {
         booking: {
           include: {
-            service: true
+            service: true,
+            staff: true
           }
         }
       },
@@ -52,55 +92,73 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    // Calculate REAL balances from actual payments
-    const completedPayments = payments.filter((p: any) => p.status === 'COMPLETED')
-    const totalEarnings = completedPayments.reduce((sum: number, payment: any) => sum + Number(payment.businessAmount), 0)
-    const platformFees = completedPayments.reduce((sum: number, payment: any) => sum + Number(payment.platformFee), 0)
-    
-    // Get REAL available balance (payments older than 2 days are available for payout)
-    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-    const availablePayments = completedPayments.filter((p: any) => new Date(p.createdAt) < twoDaysAgo)
-    const availableBalance = availablePayments.reduce((sum: number, payment: any) => sum + Number(payment.businessAmount), 0)
-    
-    // Pending balance = recent payments (less than 2 days old)
-    const pendingPayments = completedPayments.filter((p: any) => new Date(p.createdAt) >= twoDaysAgo)
-    const pendingBalance = pendingPayments.reduce((sum: number, payment: any) => sum + Number(payment.businessAmount), 0)
+    // Calculate balances
+    let totalRevenue = 0
+    let totalPlatformFees = 0
+    let totalBusinessEarnings = 0
 
-    // Mock payout history for now (until payout table is created)
-    const formattedPayoutHistory = [
-      {
-        id: '1',
-        amount: 250.00,
-        status: 'COMPLETED',
-        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Weekly payout',
-        stripeTransferId: 'tr_1234567890'
+    for (const payment of completedPayments) {
+      const amount = parseFloat(payment.amount.toString())
+      const platformFee = parseFloat(payment.platformFee.toString())
+      const businessAmount = parseFloat(payment.businessAmount.toString())
+      
+      totalRevenue += amount
+      totalPlatformFees += platformFee
+      
+      // Calculate business earnings after staff commission
+      const staffEarnings = (businessAmount * staffCommissionRate) / 100
+      const businessEarnings = businessAmount - staffEarnings
+      totalBusinessEarnings += businessEarnings
+    }
+
+    // Get payout history
+    const payoutHistory = await prisma.payout.findMany({
+      where: {
+        businessId: business.id
       },
-      {
-        id: '2',
-        amount: 180.50,
-        status: 'COMPLETED',
-        date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Weekly payout',
-        stripeTransferId: 'tr_0987654321'
-      }
-    ]
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 10
+    })
 
-    // Calculate next payout date (next Friday)
-    const today = new Date()
-    const nextFriday = new Date(today)
-    const daysUntilFriday = (5 - today.getDay() + 7) % 7 || 7
-    nextFriday.setDate(today.getDate() + daysUntilFriday)
+    const formattedPayoutHistory: PayoutTransaction[] = payoutHistory.map(payout => ({
+      id: payout.id,
+      amount: parseFloat(payout.amount.toString()),
+      status: payout.status as 'COMPLETED' | 'PENDING' | 'FAILED',
+      date: payout.createdAt.toISOString().split('T')[0],
+      description: payout.description || `Payout ${payout.id}`,
+      stripeTransferId: payout.stripeTransferId || undefined
+    }))
 
-    // Get real Stripe account details if connected
-    let stripeAccountDetails = null
-    let bankAccountDetails = null
+    // Calculate pending balance (recent unpaid earnings)
+    const thisWeek = new Date()
+    thisWeek.setDate(thisWeek.getDate() - 7)
     
+    const recentPayments = completedPayments.filter(p => 
+      p.createdAt >= thisWeek
+    )
+
+    const pendingBalance = recentPayments.reduce((sum, payment) => {
+      const businessAmount = parseFloat(payment.businessAmount.toString())
+      const staffEarnings = (businessAmount * staffCommissionRate) / 100
+      const businessEarnings = businessAmount - staffEarnings
+      return sum + businessEarnings
+    }, 0)
+
+    // Calculate next payout date (weekly on Fridays)
+    const nextPayout = new Date()
+    const daysUntilFriday = (5 - nextPayout.getDay() + 7) % 7
+    nextPayout.setDate(nextPayout.getDate() + (daysUntilFriday || 7))
+
+    // Check Stripe connection status
+    let stripeConnected = false
+    let bankAccountDetails: BankAccount | undefined
+
     if (business.stripeAccountId) {
       try {
-        // Get Stripe account details
         const account = await stripe.accounts.retrieve(business.stripeAccountId)
-        stripeAccountDetails = account
+        stripeConnected = account.charges_enabled && account.payouts_enabled
         
         // Get external accounts (bank accounts)
         if (account.external_accounts && account.external_accounts.data.length > 0) {
@@ -108,7 +166,7 @@ export async function GET(req: NextRequest) {
           bankAccountDetails = {
             id: bankAccount.id,
             bankName: bankAccount.bank_name || 'Connected Bank',
-            accountNumber: bankAccount.last4 || '****',
+            accountNumber: `****${bankAccount.last4 || '****'}`,
             routingNumber: bankAccount.routing_number || '****',
             currency: bankAccount.currency || 'gbp',
             status: account.details_submitted ? 'verified' : 'pending'
@@ -119,15 +177,17 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const payoutData = {
-      availableBalance,
+    const availableBalance = totalBusinessEarnings - pendingBalance
+
+    const payoutData: PayoutData = {
+      availableBalance: Math.max(0, availableBalance),
       pendingBalance,
-      totalEarnings,
-      platformFees,
+      totalEarnings: totalBusinessEarnings,
+      platformFees: totalPlatformFees,
       payoutHistory: formattedPayoutHistory,
-      nextPayoutDate: nextFriday.toISOString(),
-      stripeConnected: !!business.stripeAccountId,
-      stripeAccountDetails,
+      nextPayoutDate: nextPayout.toISOString().split('T')[0],
+      stripeConnected,
+      stripeAccountId: business.stripeAccountId || undefined,
       bankAccount: bankAccountDetails
     }
 

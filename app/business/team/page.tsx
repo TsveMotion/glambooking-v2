@@ -16,7 +16,11 @@ import {
   Crown,
   UserCheck,
   UserX,
-  Star
+  Star,
+  Clock,
+  Send,
+  X,
+  RefreshCw
 } from 'lucide-react'
 
 interface TeamMember {
@@ -31,11 +35,24 @@ interface TeamMember {
   createdAt: string
 }
 
+interface PendingInvitation {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  phone?: string
+  role: string
+  status: string
+  createdAt: string
+  expiresAt: string
+}
+
 interface Business {
   id: string
   name: string
   plan: 'starter' | 'professional' | 'enterprise'
   teamMembers: TeamMember[]
+  pendingInvitations: PendingInvitation[]
 }
 
 export default function TeamPage() {
@@ -98,7 +115,7 @@ export default function TeamPage() {
     }
 
     const planLimits = getPlanLimits(business?.plan || 'starter')
-    const currentTeamSize = business?.teamMembers?.length || 0
+    const currentTeamSize = (business?.teamMembers?.length || 0) + (business?.pendingInvitations?.length || 0)
 
     if (planLimits.maxTeam !== -1 && currentTeamSize >= planLimits.maxTeam) {
       alert(`Your ${planLimits.name} plan allows up to ${planLimits.maxTeam} team members. Please upgrade to add more.`)
@@ -160,6 +177,44 @@ export default function TeamPage() {
     }
   }
 
+  const cancelInvitation = async (invitationId: string) => {
+    if (!confirm('Are you sure you want to cancel this invitation?')) return
+
+    try {
+      const response = await fetch(`/api/business/team/invitation/${invitationId}/cancel`, {
+        method: 'POST'
+      })
+
+      if (response.ok) {
+        alert('Invitation cancelled successfully')
+        fetchTeamData()
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to cancel invitation')
+      }
+    } catch (error) {
+      alert('Failed to cancel invitation')
+    }
+  }
+
+  const resendInvitation = async (invitationId: string, email: string) => {
+    try {
+      const response = await fetch(`/api/business/team/invitation/${invitationId}/resend`, {
+        method: 'POST'
+      })
+
+      if (response.ok) {
+        alert(`Invitation resent successfully to ${email}!`)
+        fetchTeamData()
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to resend invitation')
+      }
+    } catch (error) {
+      alert('Failed to resend invitation')
+    }
+  }
+
   if (!isLoaded || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -183,7 +238,7 @@ export default function TeamPage() {
   }
 
   const planLimits = getPlanLimits(business?.plan || 'starter')
-  const currentTeamSize = business?.teamMembers?.length || 0
+  const currentTeamSize = (business?.teamMembers?.length || 0) + (business?.pendingInvitations?.length || 0)
   const canAddMore = planLimits.maxTeam === -1 || currentTeamSize < planLimits.maxTeam
 
   return (
@@ -228,8 +283,88 @@ export default function TeamPage() {
         </Card>
       )}
 
+      {/* Pending Invitations */}
+      {business?.pendingInvitations && business.pendingInvitations.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Clock className="w-5 h-5 mr-2 text-amber-500" />
+            Pending Invitations ({business.pendingInvitations.length})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {business.pendingInvitations.map((invitation) => (
+              <Card key={invitation.id} className="border-2 border-dashed border-amber-200 bg-amber-50/50">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {invitation.firstName} {invitation.lastName}
+                        </h3>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Pending
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Mail className="w-4 h-4 mr-2" />
+                      {invitation.email}
+                    </div>
+                    {invitation.phone && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Phone className="w-4 h-4 mr-2" />
+                        {invitation.phone}
+                      </div>
+                    )}
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Users className="w-4 h-4 mr-2" />
+                      Role: {invitation.role}
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Expires: {new Date(invitation.expiresAt).toLocaleDateString()}
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => resendInvitation(invitation.id, invitation.email)}
+                      className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-1" />
+                      Resend
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => cancelInvitation(invitation.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Team Members Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Users className="w-5 h-5 mr-2 text-green-500" />
+          Active Team Members ({business?.teamMembers?.length || 0})
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {business?.teamMembers?.map((member) => (
           <Card key={member.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
@@ -333,6 +468,7 @@ export default function TeamPage() {
             </Button>
           </div>
         )}
+        </div>
       </div>
 
       {/* Add Member Modal */}

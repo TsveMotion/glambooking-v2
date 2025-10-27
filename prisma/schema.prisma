@@ -84,6 +84,9 @@ model Staff {
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  // Stripe Connect account ID for payouts
+  stripeAccountId String?
+
   // Relationships
   bookings      Booking[]
   availability  Availability[]

@@ -20,6 +20,15 @@ export async function GET(req: NextRequest) {
           include: {
             staff: {
               orderBy: { createdAt: 'desc' }
+            },
+            teamInvitations: {
+              where: {
+                status: 'PENDING',
+                expiresAt: {
+                  gte: new Date()
+                }
+              },
+              orderBy: { createdAt: 'desc' }
             }
           }
         }
@@ -40,6 +49,15 @@ export async function GET(req: NextRequest) {
         },
         include: {
           staff: {
+            orderBy: { createdAt: 'desc' }
+          },
+          teamInvitations: {
+            where: {
+              status: 'PENDING',
+              expiresAt: {
+                gte: new Date()
+              }
+            },
             orderBy: { createdAt: 'desc' }
           }
         }
@@ -68,6 +86,17 @@ export async function GET(req: NextRequest) {
         },
         totalEarnings: Math.random() * 2000, // Mock earnings
         thisWeekEarnings: Math.random() * 500 // Mock weekly earnings
+      })),
+      pendingInvitations: business.teamInvitations.map(invitation => ({
+        id: invitation.id,
+        firstName: invitation.firstName,
+        lastName: invitation.lastName,
+        email: invitation.email,
+        phone: invitation.phone,
+        role: invitation.role,
+        status: invitation.status,
+        createdAt: invitation.createdAt,
+        expiresAt: invitation.expiresAt
       }))
     }
 

@@ -157,7 +157,8 @@ export default function SupportPage() {
                 <p className="text-sm text-gray-600 mb-2">
                   Speak directly with our support team
                 </p>
-                <p className="font-semibold text-blue-600">+44 20 7946 0958</p>
+                <p className="font-semibold text-blue-600">+44 07444358808</p>
+                <p className="text-xs text-red-600 font-medium mt-1">URGENT MATTERS ONLY!</p>
                 <div className="flex items-center mt-2 text-sm text-gray-500">
                   <Clock className="w-4 h-4 mr-1" />
                   Mon-Fri, 9AM-6PM GMT
@@ -184,26 +185,6 @@ export default function SupportPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  Live Chat
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 mb-2">
-                  Chat with us in real-time
-                </p>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                  Start Live Chat
-                </Button>
-                <div className="flex items-center mt-2 text-sm text-gray-500">
-                  <Clock className="w-4 h-4 mr-1" />
-                  Available 24/7
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Support Form */}

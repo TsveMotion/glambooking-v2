@@ -3,12 +3,33 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Sparkles, Menu, X, LayoutDashboard, LogOut } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth, SignOutButton } from '@clerk/nextjs'
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [dashboardRoute, setDashboardRoute] = useState('/business/dashboard')
+  const [userRole, setUserRole] = useState<string | null>(null)
   const { isSignedIn, isLoaded } = useAuth()
+
+  useEffect(() => {
+    if (isSignedIn && isLoaded) {
+      fetchUserRole()
+    }
+  }, [isSignedIn, isLoaded])
+
+  const fetchUserRole = async () => {
+    try {
+      const response = await fetch('/api/user/role')
+      if (response.ok) {
+        const data = await response.json()
+        setDashboardRoute(data.dashboardRoute)
+        setUserRole(data.role)
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error)
+    }
+  }
 
   return (
     <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-50">
@@ -42,10 +63,10 @@ export function Navigation() {
           <div className="hidden md:flex items-center space-x-4">
             {isLoaded && isSignedIn ? (
               <>
-                <Link href="/business/dashboard">
+                <Link href={dashboardRoute}>
                   <Button variant="ghost" className="text-gray-700 hover:text-glam-pink">
                     <LayoutDashboard className="w-4 h-4 mr-2" />
-                    Dashboard
+                    {userRole === 'staff_member' ? 'Staff Dashboard' : 'Dashboard'}
                   </Button>
                 </Link>
                 <SignOutButton>
@@ -119,10 +140,10 @@ export function Navigation() {
               <div className="flex flex-col space-y-2 pt-4 border-t border-gray-100">
                 {isLoaded && isSignedIn ? (
                   <>
-                    <Link href="/business/dashboard" onClick={() => setIsMenuOpen(false)}>
+                    <Link href={dashboardRoute} onClick={() => setIsMenuOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start text-gray-700">
                         <LayoutDashboard className="w-4 h-4 mr-2" />
-                        Dashboard
+                        {userRole === 'staff_member' ? 'Staff Dashboard' : 'Dashboard'}
                       </Button>
                     </Link>
                     <SignOutButton>

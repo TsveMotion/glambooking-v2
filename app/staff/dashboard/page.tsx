@@ -14,7 +14,9 @@ import {
   Star,
   TrendingUp,
   Mail,
-  Phone
+  Phone,
+  DollarSign,
+  ArrowRight
 } from 'lucide-react'
 
 interface StaffData {
@@ -130,11 +132,15 @@ export default function StaffDashboard() {
             <div className="flex items-center space-x-4">
               <Button variant="outline" onClick={() => router.push('/staff/calendar')}>
                 <Calendar className="w-4 h-4 mr-2" />
-                View Calendar
+                Calendar
               </Button>
-              <Button onClick={() => router.push('/staff/clients')}>
+              <Button variant="outline" onClick={() => router.push('/staff/clients')}>
                 <Users className="w-4 h-4 mr-2" />
-                Manage Clients
+                Clients
+              </Button>
+              <Button onClick={() => router.push('/staff/payouts')}>
+                <DollarSign className="w-4 h-4 mr-2" />
+                Payouts
               </Button>
             </div>
           </div>
