@@ -50,6 +50,15 @@ model Business {
   stripeAccountId String?
   stripeOnboarded Boolean @default(false)
 
+  // Subscription Plan
+  plan String @default("free") // free, starter, professional, enterprise
+  planStartDate DateTime @default(now())
+  planEndDate DateTime?
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  maxStaff Int @default(1) // Plan limits: free=1, starter=5, professional=15, enterprise=unlimited
+  bookingFeePercentage Decimal @default(10.0) @db.Decimal(4, 2) // free=10%, starter=5%, professional=3%, enterprise=2%
+
   // Relationships
   staff         Staff[]
   services      Service[]
@@ -158,6 +167,8 @@ model Booking {
   // Payment
   payments Payment[]
 
+  // Prevent duplicate bookings for the same client, service, staff, and time
+  @@unique([clientEmail, serviceId, staffId, startTime])
   @@map("bookings")
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { brevoEmailService } from '@/lib/brevo-email'
+import { canAddStaff } from '@/lib/plan-limits'
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,7 +34,21 @@ export async function POST(req: NextRequest) {
       }, { status: 404 })
     }
 
-    const business = user.businesses[0]
+    const business = user.businesses[0] as any // Temporary type assertion until Prisma client updates
+
+    // Get current staff count to check plan limits
+    const currentStaffCount = await prisma.staff.count({
+      where: { businessId: business.id }
+    })
+
+    // Check if business can add more staff based on their plan
+    if (!canAddStaff(currentStaffCount, business.plan || 'free')) {
+      return NextResponse.json({ 
+        error: `You've reached the staff limit for your ${business.plan || 'free'} plan. Please upgrade to add more team members.`,
+        upgradeRequired: true,
+        currentPlan: business.plan || 'free'
+      }, { status: 403 })
+    }
 
     // Check if email already exists in this business as a staff member
     const existingMember = await prisma.staff.findFirst({

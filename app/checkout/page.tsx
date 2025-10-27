@@ -19,45 +19,51 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 const plans = {
   starter: {
     name: 'Starter',
-    price: '£30',
+    price: '£19',
     priceId: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID || 'demo_starter_price',
+    bookingFee: '5%',
     features: [
-      'Up to 3 staff members',
+      'Up to 5 staff members',
       'Unlimited bookings',
-      'Basic analytics',
+      'Advanced analytics',
       'Email notifications',
-      'Standard support',
-      'Custom booking page'
+      'Priority support',
+      'Custom booking page',
+      'Basic branding'
     ]
   },
   professional: {
     name: 'Professional',
-    price: '£50',
+    price: '£39',
     priceId: process.env.NEXT_PUBLIC_STRIPE_PROFESSIONAL_PRICE_ID || 'demo_professional_price',
+    bookingFee: '3%',
     features: [
-      'Up to 10 staff members',
+      'Up to 15 staff members',
       'Unlimited bookings',
-      'Advanced analytics',
+      'Premium analytics',
       'Email & SMS notifications',
       'Priority support',
-      'Custom branding',
-      'Marketing tools'
+      'Full custom branding',
+      'Marketing tools',
+      'Multi-location support'
     ]
   },
   enterprise: {
     name: 'Enterprise',
-    price: '£100',
+    price: '£79',
     priceId: process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_PRICE_ID || 'demo_enterprise_price',
+    bookingFee: '2%',
     features: [
       'Unlimited staff members',
       'Unlimited bookings',
-      'Premium analytics',
+      'Enterprise analytics',
       'Email & SMS notifications',
-      'Dedicated support',
-      'Custom branding',
-      'Marketing tools',
+      'Dedicated support manager',
+      'White-label branding',
+      'Advanced marketing suite',
       'Multi-location support',
-      'API access'
+      'API access',
+      'Custom integrations'
     ]
   }
 }
@@ -121,10 +127,10 @@ export default function CheckoutPage() {
             Back
           </Button>
           <h1 className="text-3xl lg:text-4xl font-bold text-glam-charcoal mb-4">
-            Start Your Free Trial
+            Subscribe to {selectedPlan.name}
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Get started with {selectedPlan.name} plan. No charges for 14 days, cancel anytime.
+            Get started with the {selectedPlan.name} plan. Start building your business today.
           </p>
         </div>
 
@@ -147,13 +153,13 @@ export default function CheckoutPage() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center text-green-800">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center text-blue-800">
                     <Shield className="w-5 h-5 mr-2" />
-                    <span className="font-semibold">14-Day Free Trial</span>
+                    <span className="font-semibold">Monthly Subscription</span>
                   </div>
-                  <p className="text-sm text-green-700 mt-1">
-                    No charges until {new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                  <p className="text-sm text-blue-700 mt-1">
+                    Billed monthly, cancel anytime. No setup fees.
                   </p>
                 </div>
                 
@@ -171,12 +177,12 @@ export default function CheckoutPage() {
                 
                 <div className="pt-4 border-t border-gray-200">
                   <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>Platform fee per booking</span>
-                    <span>5%</span>
+                    <span>Booking fee per transaction</span>
+                    <span>{selectedPlan.bookingFee}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>You keep</span>
-                    <span className="font-semibold text-glam-charcoal">95%</span>
+                    <span className="font-semibold text-glam-charcoal">{100 - parseInt(selectedPlan.bookingFee)}%</span>
                   </div>
                 </div>
               </div>
@@ -191,7 +197,7 @@ export default function CheckoutPage() {
                 Payment Information
               </CardTitle>
               <CardDescription>
-                We'll collect your payment details to start your subscription after the trial ends.
+                Secure payment processing powered by Stripe. Your subscription starts immediately.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -220,22 +226,22 @@ export default function CheckoutPage() {
 
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-glam-charcoal mb-2">Trial Details:</h3>
+                  <h3 className="font-semibold text-glam-charcoal mb-2">Subscription Details:</h3>
                   <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Free for 14 days</li>
+                    <li>• Billed monthly at {selectedPlan.price}</li>
                     <li>• Full access to all {selectedPlan.name} features</li>
-                    <li>• Cancel anytime during trial</li>
-                    <li>• No charges if cancelled before trial ends</li>
+                    <li>• Cancel or change plan anytime</li>
+                    <li>• No setup fees or hidden costs</li>
                   </ul>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-glam-charcoal mb-2">After Trial:</h3>
+                  <h3 className="font-semibold text-glam-charcoal mb-2">Booking Revenue:</h3>
                   <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Automatically billed {selectedPlan.price}/month</li>
-                    <li>• Cancel or change plan anytime</li>
-                    <li>• 5% transaction fee on bookings</li>
-                    <li>• 95% of booking revenue goes to you</li>
+                    <li>• {selectedPlan.bookingFee} transaction fee on bookings</li>
+                    <li>• {100 - parseInt(selectedPlan.bookingFee)}% of booking revenue goes to you</li>
+                    <li>• Automatic payouts to your bank account</li>
+                    <li>• Real-time transaction tracking</li>
                   </ul>
                 </div>
               </div>
@@ -252,15 +258,15 @@ export default function CheckoutPage() {
                   </div>
                 ) : (
                   <>
-                    Start Free Trial
+                    Subscribe Now
                     <ArrowLeft className="ml-2 w-5 h-5 rotate-180" />
                   </>
                 )}
               </Button>
 
               <p className="text-xs text-gray-500 text-center">
-                By clicking "Start Free Trial", you agree to our Terms of Service and Privacy Policy.
-                You can cancel anytime during your trial period.
+                By clicking "Subscribe Now", you agree to our Terms of Service and Privacy Policy.
+                You can cancel your subscription anytime.
               </p>
             </CardContent>
           </Card>

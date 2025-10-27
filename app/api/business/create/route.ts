@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
+import { getPlanLimits } from '@/lib/plan-limits'
 
 export const runtime = 'nodejs'
 
@@ -30,6 +31,9 @@ export async function POST(req: NextRequest) {
       }
     })
 
+    // Get default plan limits (Free plan)
+    const freePlanLimits = getPlanLimits('free')
+
     // Create business
     const business = await prisma.business.create({
       data: {
@@ -40,6 +44,9 @@ export async function POST(req: NextRequest) {
         email,
         website,
         ownerId: user.id,
+        plan: 'free',
+        maxStaff: freePlanLimits.maxStaff,
+        bookingFeePercentage: freePlanLimits.bookingFeePercentage,
         services: {
           create: services.map((service: any) => ({
             name: service.name,

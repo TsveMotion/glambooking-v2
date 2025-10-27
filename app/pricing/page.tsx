@@ -16,62 +16,87 @@ import Link from 'next/link'
 export default function PricingPage() {
   const plans = [
     {
-      name: 'Starter',
-      price: '£30',
+      name: 'Free',
+      price: '£0',
       period: '/month',
-      description: 'Perfect for solo practitioners and small salons',
+      description: 'Perfect for solo practitioners just getting started',
       features: [
-        'Up to 3 staff members',
+        '1 staff member only',
         'Unlimited bookings',
         'Basic analytics',
         'Email notifications',
-        'Standard support',
+        'Community support',
         'Custom booking page',
-        '5% transaction fee'
+        '10% booking fee'
       ],
       popular: false,
       icon: Users,
-      color: 'bg-blue-500'
+      color: 'bg-green-500',
+      highlight: 'Forever Free'
     },
     {
-      name: 'Professional',
-      price: '£50',
+      name: 'Starter',
+      price: '£19',
       period: '/month',
-      description: 'Ideal for growing businesses with multiple staff',
+      description: 'Great for small salons with multiple staff',
       features: [
-        'Up to 10 staff members',
+        'Up to 5 staff members',
         'Unlimited bookings',
         'Advanced analytics',
-        'Email & SMS notifications',
+        'Email notifications',
         'Priority support',
-        'Custom branding',
-        'Marketing tools',
-        '5% transaction fee'
+        'Custom booking page',
+        'Basic branding',
+        '5% booking fee'
       ],
       popular: true,
       icon: Zap,
-      color: 'bg-glam-pink'
+      color: 'bg-blue-500',
+      highlight: 'Most Popular'
     },
     {
-      name: 'Enterprise',
-      price: '£100',
+      name: 'Professional',
+      price: '£39',
       period: '/month',
-      description: 'For large salons and multi-location businesses',
+      description: 'Ideal for growing businesses with multiple locations',
       features: [
-        'Unlimited staff members',
+        'Up to 15 staff members',
         'Unlimited bookings',
         'Premium analytics',
         'Email & SMS notifications',
-        'Dedicated support',
-        'Custom branding',
+        'Priority support',
+        'Full custom branding',
         'Marketing tools',
         'Multi-location support',
-        'API access',
-        '5% transaction fee'
+        '3% booking fee'
       ],
       popular: false,
       icon: Crown,
-      color: 'bg-glam-gold'
+      color: 'bg-glam-pink',
+      highlight: 'Best Value'
+    },
+    {
+      name: 'Enterprise',
+      price: '£79',
+      period: '/month',
+      description: 'For large salons and franchise businesses',
+      features: [
+        'Unlimited staff members',
+        'Unlimited bookings',
+        'Enterprise analytics',
+        'Email & SMS notifications',
+        'Dedicated support manager',
+        'White-label branding',
+        'Advanced marketing suite',
+        'Multi-location support',
+        'API access',
+        'Custom integrations',
+        '2% booking fee'
+      ],
+      popular: false,
+      icon: Building,
+      color: 'bg-glam-gold',
+      highlight: 'Enterprise'
     }
   ]
 
@@ -89,15 +114,15 @@ export default function PricingPage() {
                 <span className="block glam-text-gradient">Pricing</span>
               </h1>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Choose the perfect plan for your business. All plans include our core features 
-                with no hidden fees or setup costs.
+                Start free forever or choose a paid plan to unlock more features. 
+                All plans include our core booking system with no hidden fees.
               </p>
             </div>
             
             <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Check className="w-4 h-4 text-green-500" />
-                <span>14-day free trial</span>
+                <span>Start free forever</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Check className="w-4 h-4 text-green-500" />
@@ -115,7 +140,7 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-4 gap-6">
             {plans.map((plan, index) => {
               const IconComponent = plan.icon
               return (
@@ -127,11 +152,14 @@ export default function PricingPage() {
                       : 'border-gray-200 hover:border-glam-pink/50'
                   }`}
                 >
-                  {plan.popular && (
+                  {(plan.popular || plan.highlight) && (
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <div className="bg-glam-pink text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-1">
+                      <div className={`text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-1 ${
+                        plan.name === 'Free' ? 'bg-green-500' : 
+                        plan.popular ? 'bg-glam-pink' : 'bg-glam-gold'
+                      }`}>
                         <Star className="w-4 h-4 fill-current" />
-                        <span>Most Popular</span>
+                        <span>{plan.highlight}</span>
                       </div>
                     </div>
                   )}
@@ -161,16 +189,18 @@ export default function PricingPage() {
                     </ul>
                     
                     <div className="pt-6">
-                      <Link href={`/checkout?plan=${plan.name.toLowerCase()}`}>
+                      <Link href={plan.name === 'Free' ? '/register' : `/checkout?plan=${plan.name.toLowerCase()}`}>
                         <Button 
                           className={`w-full text-lg py-3 ${
                             plan.popular 
                               ? 'glam-gradient text-white hover:opacity-90' 
+                              : plan.name === 'Free'
+                              ? 'bg-green-500 text-white hover:bg-green-600'
                               : 'border-2 border-glam-pink text-glam-pink hover:bg-glam-pink hover:text-white'
                           }`}
                           variant={plan.popular ? 'default' : 'outline'}
                         >
-                          Start Free Trial
+                          {plan.name === 'Free' ? 'Start Free' : 'Get Started'}
                           <ArrowRight className="ml-2 w-5 h-5" />
                         </Button>
                       </Link>
@@ -198,22 +228,22 @@ export default function PricingPage() {
           <div className="space-y-8">
             <div className="bg-gray-50 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-glam-charcoal mb-3">
-                What's included in the free trial?
+                What's included in the Free plan?
               </h3>
               <p className="text-gray-600">
-                Your 14-day free trial includes full access to all features of your chosen plan. 
-                No credit card required to start, and you can cancel anytime during the trial period.
+                The Free plan includes 1 staff member, unlimited bookings, basic analytics, email notifications, 
+                and community support. Perfect for solo practitioners to get started with no upfront costs.
               </p>
             </div>
             
             <div className="bg-gray-50 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-glam-charcoal mb-3">
-                How does the 5% transaction fee work?
+                How do the booking fees work?
               </h3>
               <p className="text-gray-600">
-                We charge a 5% fee on each successful booking payment. This covers payment processing, 
-                platform maintenance, and support. The remaining 95% is automatically transferred to 
-                your connected bank account.
+                We charge different booking fees based on your plan: Free (10%), Starter (5%), Professional (3%), 
+                and Enterprise (2%). This covers payment processing, platform maintenance, and support. 
+                The remaining amount is automatically transferred to your connected bank account.
               </p>
             </div>
             
@@ -233,7 +263,7 @@ export default function PricingPage() {
               </h3>
               <p className="text-gray-600">
                 No setup fees, ever. We believe in transparent pricing with no hidden costs. 
-                You only pay your monthly subscription and the 5% transaction fee on bookings.
+                You only pay your monthly subscription (if applicable) and the booking fee on successful transactions.
               </p>
             </div>
             
@@ -310,9 +340,9 @@ export default function PricingPage() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <Link href="/checkout?plan=professional">
+              <Link href="/register">
                 <Button size="lg" variant="outline" className="text-lg px-8 py-4 border-2 border-glam-pink text-glam-pink hover:bg-glam-pink hover:text-white">
-                  Start Free Trial
+                  Start Free Forever
                 </Button>
               </Link>
             </div>

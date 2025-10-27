@@ -261,13 +261,13 @@ export default function BookingSuccessPage() {
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs font-bold text-blue-600">1</span>
+                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckCircle className="w-3 h-3 text-green-600" />
                 </div>
                 <div>
-                  <p className="font-medium">Confirmation Email</p>
+                  <p className="font-medium">Confirmation Email Sent</p>
                   <p className="text-sm text-gray-600">
-                    A confirmation email has been sent to {booking.clientEmail}
+                    A detailed confirmation email has been sent to {booking.clientEmail} with all your booking details
                   </p>
                 </div>
               </div>
