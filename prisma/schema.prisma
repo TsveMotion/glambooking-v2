@@ -1,173 +1,143 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("POSTGRES_URL_NON_POOLING")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  clerkId   String   @unique
-  email     String   @unique
-  firstName String?
-  lastName  String?
-  imageUrl  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relationships
-  businesses Business[]
-  bookings   Booking[]
+  id              String           @id @default(cuid())
+  clerkId         String           @unique
+  email           String           @unique
+  firstName       String?
+  lastName        String?
+  imageUrl        String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  bookings        Booking[]
+  businesses      Business[]
+  staff           Staff[]
   teamInvitations TeamInvitation[]
-  staff      Staff[]
 
   @@map("users")
 }
 
 model Business {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  address     String?
-  phone       String?
-  email       String?
-  website     String?
-  imageUrl    String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Owner
-  ownerId String
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  // Stripe Connect
-  stripeAccountId String?
-  stripeOnboarded Boolean @default(false)
-
-  // Subscription Plan
-  plan String @default("free") // free, starter, professional, enterprise
-  planStartDate DateTime @default(now())
-  planEndDate DateTime?
-  stripeCustomerId String?
+  id                   String                 @id @default(cuid())
+  name                 String
+  description          String?
+  address              String?
+  phone                String?
+  email                String?
+  website              String?
+  imageUrl             String?
+  isActive             Boolean                @default(true)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  ownerId              String
+  stripeAccountId      String?
+  stripeOnboarded      Boolean                @default(false)
+  bookingFeePercentage Decimal                @default(10.0) @db.Decimal(4, 2)
+  maxStaff             Int                    @default(1)
+  plan                 String                 @default("free")
+  planEndDate          DateTime?
+  planStartDate        DateTime               @default(now())
+  stripeCustomerId     String?
   stripeSubscriptionId String?
-  maxStaff Int @default(1) // Plan limits: free=1, starter=5, professional=15, enterprise=unlimited
-  bookingFeePercentage Decimal @default(10.0) @db.Decimal(4, 2) // free=10%, starter=5%, professional=3%, enterprise=2%
-
-  // Relationships
-  staff         Staff[]
-  services      Service[]
-  bookings      Booking[]
-  clients       Client[]
-  subscriptions Subscription[]
-  analytics     Analytics[]
-  payouts       Payout[]
-  customization BusinessCustomization?
-  teamInvitations TeamInvitation[]
+  analytics            Analytics[]
+  bookings             Booking[]
+  customization        BusinessCustomization?
+  owner                User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  clients              Client[]
+  payouts              Payout[]
+  services             Service[]
+  staff                Staff[]
+  subscriptions        Subscription[]
+  teamInvitations      TeamInvitation[]
 
   @@map("businesses")
 }
 
 model Staff {
-  id          String   @id @default(cuid())
-  firstName   String
-  lastName    String
-  email       String?
-  phone       String?
-  imageUrl    String?
-  role        String   @default("staff") // staff, manager, admin
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Business relationship
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  // User relationship (optional - for staff members who have user accounts)
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  // Stripe Connect account ID for payouts
+  id              String         @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String?
+  imageUrl        String?
+  role            String         @default("staff")
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  businessId      String
+  userId          String?
   stripeAccountId String?
-
-  // Relationships
-  bookings      Booking[]
-  availability  Availability[]
-  staffServices StaffService[]
+  availability    Availability[]
+  bookings        Booking[]
+  business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user            User?          @relation(fields: [userId], references: [id])
+  staffServices   StaffService[]
 
   @@map("staff")
 }
 
 model Service {
-  id          String  @id @default(cuid())
-  name        String
-  description String?
-  duration    Int     // in minutes
-  price       Decimal @db.Decimal(10, 2)
-  isActive    Boolean @default(true)
-  category    String?
-  imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Business relationship
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  // Relationships
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  duration      Int
+  price         Decimal        @db.Decimal(10, 2)
+  isActive      Boolean        @default(true)
+  category      String?
+  imageUrl      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  businessId    String
   bookings      Booking[]
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   staffServices StaffService[]
 
   @@map("services")
 }
 
 model StaffService {
-  id String @id @default(cuid())
-
+  id        String  @id @default(cuid())
   staffId   String
-  staff     Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
   serviceId String
   service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  staff     Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
   @@unique([staffId, serviceId])
   @@map("staff_services")
 }
 
 model Booking {
-  id          String        @id @default(cuid())
-  startTime   DateTime
-  endTime     DateTime
-  status      BookingStatus @default(PENDING)
-  notes       String?
-  totalAmount Decimal       @db.Decimal(10, 2)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  startTime        DateTime
+  endTime          DateTime
+  status           BookingStatus @default(PENDING)
+  notes            String?
+  totalAmount      Decimal       @db.Decimal(10, 2)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  clientName       String
+  clientEmail      String
+  clientPhone      String?
+  userId           String?
+  businessId       String
+  staffId          String
+  serviceId        String
+  completedAt      DateTime?
+  completedBy      String?
+  fundsAvailableAt DateTime?
+  business         Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  service          Service       @relation(fields: [serviceId], references: [id])
+  staff            Staff         @relation(fields: [staffId], references: [id])
+  user             User?         @relation(fields: [userId], references: [id])
+  payments         Payment[]
 
-  // Client information
-  clientName  String
-  clientEmail String
-  clientPhone String?
-
-  // Relationships
-  userId     String?
-  user       User?     @relation(fields: [userId], references: [id])
-  businessId String
-  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  staffId    String
-  staff      Staff     @relation(fields: [staffId], references: [id])
-  serviceId  String
-  service    Service   @relation(fields: [serviceId], references: [id])
-
-  // Payment
-  payments Payment[]
-
-  // Prevent duplicate bookings for the same client, service, staff, and time
   @@unique([clientEmail, serviceId, staffId, startTime])
   @@map("bookings")
 }
@@ -175,33 +145,29 @@ model Booking {
 model Payment {
   id              String        @id @default(cuid())
   amount          Decimal       @db.Decimal(10, 2)
-  platformFee     Decimal       @db.Decimal(10, 2) // 5% platform fee
-  businessAmount  Decimal       @db.Decimal(10, 2) // 95% to business
+  platformFee     Decimal       @db.Decimal(10, 2)
+  businessAmount  Decimal       @db.Decimal(10, 2)
   currency        String        @default("GBP")
   status          PaymentStatus @default(PENDING)
   stripePaymentId String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-
-  // Relationships
-  bookingId String
-  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId       String
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@map("payments")
 }
 
 model Availability {
   id        String   @id @default(cuid())
-  dayOfWeek Int      // 0 = Sunday, 1 = Monday, etc.
-  startTime String   // HH:MM format
-  endTime   String   // HH:MM format
+  dayOfWeek Int
+  startTime String
+  endTime   String
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Staff relationship
-  staffId String
-  staff   Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  staffId   String
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
   @@map("availability")
 }
@@ -209,7 +175,7 @@ model Availability {
 model Subscription {
   id                String           @id @default(cuid())
   plan              SubscriptionPlan
-  status            String           @default("active") // active, canceled, past_due
+  status            String           @default("active")
   stripeCustomerId  String?
   stripePriceId     String
   stripeSubId       String?
@@ -217,10 +183,8 @@ model Subscription {
   cancelAtPeriodEnd Boolean          @default(false)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
-
-  // Business relationship
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId        String
+  business          Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
 }
@@ -228,62 +192,54 @@ model Subscription {
 model Payout {
   id               String   @id @default(cuid())
   amount           Decimal  @db.Decimal(10, 2)
-  status           String   // PENDING, COMPLETED, FAILED
+  status           String
   description      String?
   stripeTransferId String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-
-  // Business relationship
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("payouts")
 }
 
 model Analytics {
-  id          String   @id @default(cuid())
-  date        DateTime @db.Date
-  totalBookings Int    @default(0)
-  totalRevenue  Decimal @db.Decimal(10, 2) @default(0)
-  newClients    Int     @default(0)
+  id            String   @id @default(cuid())
+  date          DateTime @db.Date
+  totalBookings Int      @default(0)
+  totalRevenue  Decimal  @default(0) @db.Decimal(10, 2)
+  newClients    Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  // Business relationship
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, date])
   @@map("analytics")
 }
 
 model Client {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   firstName   String
   lastName    String
   email       String
   phone       String?
   dateOfBirth DateTime?
   notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Business relationship (clients are business-specific)
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, email])
   @@map("clients")
 }
 
 model BusinessCustomization {
-  id       String @id @default(cuid())
-  settings Json   // Store customization settings as JSON
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Business relationship (one-to-one)
+  id         String   @id @default(cuid())
+  settings   Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   businessId String   @unique
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
@@ -291,30 +247,25 @@ model BusinessCustomization {
 }
 
 model TeamInvitation {
-  id          String   @id @default(cuid())
-  email       String
-  firstName   String
-  lastName    String
-  phone       String?
-  role        String
-  status      String   @default("PENDING") // PENDING, ACCEPTED, EXPIRED, CANCELLED
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Business relationship
+  id         String   @id @default(cuid())
+  email      String
+  firstName  String
+  lastName   String
+  phone      String?
+  role       String
+  status     String   @default("PENDING")
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   businessId String
+  invitedBy  String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  // Invited by user
-  invitedBy String
-  inviter   User   @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
+  inviter    User     @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
 
   @@unique([email, businessId])
   @@map("team_invitations")
 }
 
-// Enums
 enum BookingStatus {
   PENDING
   CONFIRMED
@@ -337,4 +288,3 @@ enum SubscriptionPlan {
   PROFESSIONAL
   ENTERPRISE
 }
-

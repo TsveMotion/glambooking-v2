@@ -13,6 +13,87 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const metadata = session.metadata!
 
   try {
+    // Check if this is a subscription upgrade
+    if (metadata.isUpgrade === 'true' && metadata.businessId && metadata.planId) {
+      console.log('Processing subscription upgrade:', metadata.planId, 'for business:', metadata.businessId)
+      
+      const planPricing: Record<string, { maxStaff: number, name: string }> = {
+        free: { maxStaff: 1, name: 'Free Plan' },
+        starter: { maxStaff: 5, name: 'Starter Plan' },
+        professional: { maxStaff: 15, name: 'Professional Plan' },
+        enterprise: { maxStaff: 50, name: 'Enterprise Plan' }
+      }
+      
+      const selectedPlan = planPricing[metadata.planId]
+      const subscriptionId = typeof session.subscription === 'string' 
+        ? session.subscription 
+        : session.subscription?.toString() || null
+      
+      // Update business plan
+      await prisma.business.update({
+        where: { id: metadata.businessId },
+        data: {
+          plan: metadata.planId,
+          maxStaff: selectedPlan.maxStaff,
+          planStartDate: new Date(),
+          planEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          stripeSubscriptionId: subscriptionId
+        } as any
+      })
+      
+      // Update customization settings
+      const business = await prisma.business.findUnique({
+        where: { id: metadata.businessId },
+        include: { customization: true }
+      })
+      
+      if (business) {
+        const existingSettings = (business.customization?.settings as any) || {}
+        const previousSubscriptionSettings = (existingSettings.subscription as any) || {}
+        
+        await prisma.businessCustomization.upsert({
+          where: { businessId: metadata.businessId },
+          update: {
+            settings: {
+              ...existingSettings,
+              subscription: {
+                ...previousSubscriptionSettings,
+                plan: metadata.planId,
+                planName: selectedPlan.name,
+                maxStaff: selectedPlan.maxStaff,
+                status: 'active',
+                checkoutSessionId: session.id,
+                subscriptionId,
+                upgradedFrom: metadata.upgradeFrom || 'free',
+                updatedAt: new Date().toISOString(),
+                nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+              }
+            }
+          },
+          create: {
+            businessId: metadata.businessId,
+            settings: {
+              subscription: {
+                plan: metadata.planId,
+                planName: selectedPlan.name,
+                maxStaff: selectedPlan.maxStaff,
+                status: 'active',
+                checkoutSessionId: session.id,
+                subscriptionId,
+                upgradedFrom: metadata.upgradeFrom || 'free',
+                updatedAt: new Date().toISOString(),
+                nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+              }
+            }
+          }
+        })
+      }
+      
+      console.log('Subscription upgrade completed for business:', metadata.businessId)
+      return
+    }
+    
+    // Otherwise, handle as a booking
     // Create the booking
     const booking = await prisma.booking.create({
       data: {

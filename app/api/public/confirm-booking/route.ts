@@ -126,52 +126,117 @@ export async function POST(req: NextRequest) {
           }
         })
       } else {
-        // Create the booking first
-        const booking = await prisma.booking.create({
-          data: {
-            businessId: metadata.businessId,
-            serviceId: metadata.serviceId,
-            staffId: metadata.staffId,
-            clientName: metadata.clientName,
-            clientEmail: metadata.clientEmail,
-            clientPhone: metadata.clientPhone || '',
-            startTime: new Date(metadata.startTime),
-            endTime: new Date(metadata.endTime),
-            totalAmount: session.amount_total! / 100, // Convert from pence to pounds
-            status: 'CONFIRMED'
-          },
-          include: {
-            service: true,
-            staff: true,
-            business: true
-          }
-        })
+        // Create the booking first - wrap in try-catch to handle race conditions
+        try {
+          const booking = await prisma.booking.create({
+            data: {
+              businessId: metadata.businessId,
+              serviceId: metadata.serviceId,
+              staffId: metadata.staffId,
+              clientName: metadata.clientName,
+              clientEmail: metadata.clientEmail,
+              clientPhone: metadata.clientPhone || '',
+              startTime: new Date(metadata.startTime),
+              endTime: new Date(metadata.endTime),
+              totalAmount: session.amount_total! / 100, // Convert from pence to pounds
+              status: 'CONFIRMED'
+            },
+            include: {
+              service: true,
+              staff: true,
+              business: true
+            }
+          })
 
-        console.log('Booking created:', booking.id)
+          console.log('Booking created:', booking.id)
 
-        // Create the payment record
-        payment = await prisma.payment.create({
-          data: {
-            bookingId: booking.id,
-            amount: session.amount_total! / 100,
-            platformFee: Number(metadata.platformFee) / 100,
-            businessAmount: Number(metadata.businessAmount) / 100,
-            currency: 'GBP',
-            status: 'COMPLETED',
-            stripePaymentId: session.payment_intent as string
-          },
-          include: {
-            booking: {
+          // Create the payment record
+          payment = await prisma.payment.create({
+            data: {
+              bookingId: booking.id,
+              amount: session.amount_total! / 100,
+              platformFee: Number(metadata.platformFee) / 100,
+              businessAmount: Number(metadata.businessAmount) / 100,
+              currency: 'GBP',
+              status: 'COMPLETED',
+              stripePaymentId: session.payment_intent as string
+            },
+            include: {
+              booking: {
+                include: {
+                  service: true,
+                  staff: true,
+                  business: true
+                }
+              }
+            }
+          })
+
+          console.log('Payment created:', payment.id)
+        } catch (createError: any) {
+          // If unique constraint error, fetch the existing booking
+          if (createError.code === 'P2002') {
+            console.log('Duplicate booking detected (race condition), fetching existing...')
+            const existingBooking = await prisma.booking.findFirst({
+              where: {
+                clientEmail: metadata.clientEmail,
+                startTime: new Date(metadata.startTime),
+                serviceId: metadata.serviceId,
+                staffId: metadata.staffId
+              },
               include: {
                 service: true,
                 staff: true,
                 business: true
               }
-            }
-          }
-        })
+            })
 
-        console.log('Payment created:', payment.id)
+            if (existingBooking) {
+              // Get or create payment for existing booking
+              payment = await prisma.payment.findFirst({
+                where: { bookingId: existingBooking.id },
+                include: {
+                  booking: {
+                    include: {
+                      service: true,
+                      staff: true,
+                      business: true
+                    }
+                  }
+                }
+              })
+
+              // If no payment exists, create it
+              if (!payment) {
+                payment = await prisma.payment.create({
+                  data: {
+                    bookingId: existingBooking.id,
+                    amount: session.amount_total! / 100,
+                    platformFee: Number(metadata.platformFee) / 100,
+                    businessAmount: Number(metadata.businessAmount) / 100,
+                    currency: 'GBP',
+                    status: 'COMPLETED',
+                    stripePaymentId: session.payment_intent as string
+                  },
+                  include: {
+                    booking: {
+                      include: {
+                        service: true,
+                        staff: true,
+                        business: true
+                      }
+                    }
+                  }
+                })
+              }
+              console.log('Using existing booking:', existingBooking.id)
+            } else {
+              throw createError // Re-throw if we can't find the booking
+            }
+          } else {
+            throw createError // Re-throw if it's not a duplicate error
+          }
+        }
       }
     }
 

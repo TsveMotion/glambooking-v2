@@ -15,7 +15,9 @@ import {
   ChevronRight,
   Plus,
   Filter,
-  Search
+  Search,
+  CheckCircle,
+  DollarSign
 } from 'lucide-react'
 import { NewBookingForm } from '@/components/new-booking-form'
 import { GoogleCalendarSync } from '@/components/google-calendar-sync'
@@ -89,6 +91,42 @@ export default function CalendarPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const markAsCompleted = async (booking: Booking) => {
+    const now = new Date()
+    const endTime = new Date(booking.endTime)
+    const isEarlyCompletion = endTime > now
+    const confirmationMessage = isEarlyCompletion
+      ? 'This appointment has not finished yet. Mark it as completed now to release funds immediately?'
+      : 'Mark this booking as completed? Funds will become available for withdrawal.'
+
+    if (!confirm(confirmationMessage)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/bookings/${booking.id}/complete`, {
+        method: 'POST'
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        alert(error.error || 'Failed to complete booking')
+        return
+      }
+
+      const result = await response.json()
+      alert(result.message || 'Booking marked as completed!')
+      fetchBookings() // Refresh the bookings list
+    } catch (error) {
+      console.error('Error completing booking:', error)
+      alert('Failed to complete booking')
+    }
+  }
+
+  const canMarkAsCompleted = (booking: Booking) => {
+    return booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED'
   }
 
   const isGoogleCalendarAvailable = () => {
@@ -347,6 +385,33 @@ export default function CalendarPage() {
                           {booking.status}
                         </span>
                         <p className="text-lg font-semibold text-glam-charcoal">£{booking.totalAmount}</p>
+                        
+                        {/* Mark as Completed Button */}
+                        {canMarkAsCompleted(booking) && (
+                          <>
+                            {new Date(booking.endTime) > new Date() && (
+                              <span className="text-xs text-amber-600 font-medium">
+                                Completing early will release funds immediately
+                              </span>
+                            )}
+                            <Button
+                              size="sm"
+                              onClick={() => markAsCompleted(booking)}
+                              className="bg-green-600 hover:bg-green-700 text-white mt-1"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Mark Completed
+                            </Button>
+                          </>
+                        )}
+
+                        {/* Show funds available indicator for completed bookings */}
+                        {booking.status === 'COMPLETED' && (
+                          <div className="flex items-center text-xs text-green-600 mt-1">
+                            <DollarSign className="w-3 h-3 mr-1" />
+                            Funds available
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>

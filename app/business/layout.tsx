@@ -34,12 +34,33 @@ export default function BusinessLayout({ children }: BusinessLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [currentPlan, setCurrentPlan] = useState<string>('free')
+  const [loadingPlan, setLoadingPlan] = useState(true)
 
   useEffect(() => {
     if (isLoaded && !userId) {
       router.push('/login')
     }
   }, [isLoaded, userId, router])
+
+  useEffect(() => {
+    const fetchPlan = async () => {
+      try {
+        const response = await fetch('/api/business/plan-status')
+        if (response.ok) {
+          const data = await response.json()
+          setCurrentPlan(data.plan || 'free')
+        }
+      } catch (error) {
+        console.error('Failed to fetch plan:', error)
+      } finally {
+        setLoadingPlan(false)
+      }
+    }
+    if (userId) {
+      fetchPlan()
+    }
+  }, [userId])
 
   if (!isLoaded) {
     return (
@@ -143,20 +164,30 @@ export default function BusinessLayout({ children }: BusinessLayoutProps) {
         </nav>
         
         <div className="absolute bottom-4 left-4 right-4">
-          <div className="bg-gradient-to-r from-glam-pink to-glam-gold rounded-lg p-4 text-white">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Upgrade to Pro</span>
-              <Star className="w-4 h-4" />
+          {!loadingPlan && currentPlan !== 'enterprise' && (
+            <div className="bg-gradient-to-r from-glam-pink to-glam-gold rounded-lg p-4 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">
+                  {currentPlan === 'free' && 'Upgrade to Starter'}
+                  {currentPlan === 'starter' && 'Upgrade to Professional'}
+                  {currentPlan === 'professional' && 'Upgrade to Enterprise'}
+                </span>
+                <Star className="w-4 h-4" />
+              </div>
+              <p className="text-xs opacity-90 mb-3">
+                {currentPlan === 'free' && 'Get up to 5 staff members and advanced features'}
+                {currentPlan === 'starter' && 'Get up to 15 staff and premium analytics'}
+                {currentPlan === 'professional' && 'Get unlimited staff and enterprise support'}
+              </p>
+              <Button 
+                size="sm" 
+                className="w-full bg-white text-glam-pink hover:bg-gray-100"
+                onClick={() => router.push('/business/pricing')}
+              >
+                Manage Plan
+              </Button>
             </div>
-            <p className="text-xs opacity-90 mb-3">Get advanced features and priority support</p>
-            <Button 
-              size="sm" 
-              className="w-full bg-white text-glam-pink hover:bg-gray-100"
-              onClick={() => router.push('/business/manage-plan')}
-            >
-              Manage Plan
-            </Button>
-          </div>
+          )}
         </div>
       </div>
 

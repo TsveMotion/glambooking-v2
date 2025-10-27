@@ -40,7 +40,7 @@ interface Plan {
 export default function PricingPage() {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
-  const [currentPlan, setCurrentPlan] = useState<string>('starter')
+  const [currentPlan, setCurrentPlan] = useState<string>('free')
   const [businessData, setBusinessData] = useState<any>(null)
   const [loadingData, setLoadingData] = useState(true)
 
@@ -62,7 +62,10 @@ export default function PricingPage() {
       if (response.ok) {
         const data = await response.json()
         setBusinessData(data)
-        setCurrentPlan(data.business?.plan || 'starter')
+        // Only update if we have a valid plan from dashboard
+        if (data.business?.plan) {
+          setCurrentPlan(data.business.plan)
+        }
       }
     } catch (error) {
       console.error('Failed to fetch business data:', error)

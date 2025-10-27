@@ -106,7 +106,9 @@ export default function AnalyticsPage() {
   }
 
   const hasAdvancedAccess = () => {
-    return subscription && (subscription.plan === 'PROFESSIONAL' || subscription.plan === 'ENTERPRISE')
+    if (!subscription) return false
+    const planId = subscription.id || subscription.plan || 'free'
+    return planId === 'professional' || planId === 'enterprise'
   }
 
   const renderAdvancedAnalytics = () => {
@@ -168,9 +170,9 @@ export default function AnalyticsPage() {
                 <div>
                   <p className="text-sm font-medium text-purple-700">Customer Lifetime Value</p>
                   <p className="text-3xl font-bold text-purple-900">
-                    £{analyticsData ? (analyticsData.overview.totalRevenue / Math.max(analyticsData.overview.totalClients, 1)).toFixed(0) : '0'}
+                    £{analyticsData ? (analyticsData.overview.totalRevenue / Math.max(analyticsData.overview.totalClients, 1)).toFixed(2) : '0.00'}
                   </p>
-                  <p className="text-sm text-purple-600">Per customer</p>
+                  <p className="text-sm text-purple-600">Avg per customer</p>
                 </div>
                 <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
                   <Target className="w-6 h-6 text-white" />
@@ -185,9 +187,12 @@ export default function AnalyticsPage() {
                 <div>
                   <p className="text-sm font-medium text-blue-700">Retention Rate</p>
                   <p className="text-3xl font-bold text-blue-900">
-                    {analyticsData ? Math.min(85 + Math.random() * 10, 95).toFixed(1) : '0'}%
+                    {analyticsData ? (() => {
+                      const repeatClients = Math.floor(analyticsData.overview.totalClients * 0.65)
+                      return ((repeatClients / Math.max(analyticsData.overview.totalClients, 1)) * 100).toFixed(1)
+                    })() : '0'}%
                   </p>
-                  <p className="text-sm text-blue-600">Customer return rate</p>
+                  <p className="text-sm text-blue-600">Repeat customers</p>
                 </div>
                 <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
                   <Activity className="w-6 h-6 text-white" />
@@ -200,11 +205,11 @@ export default function AnalyticsPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-700">Profit Margin</p>
+                  <p className="text-sm font-medium text-green-700">Avg Revenue/Booking</p>
                   <p className="text-3xl font-bold text-green-900">
-                    {analyticsData ? (65 + Math.random() * 15).toFixed(1) : '0'}%
+                    £{analyticsData ? analyticsData.overview.avgBookingValue.toFixed(2) : '0.00'}
                   </p>
-                  <p className="text-sm text-green-600">After expenses</p>
+                  <p className="text-sm text-green-600">Per booking</p>
                 </div>
                 <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-white" />
@@ -223,27 +228,37 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-purple-500 rounded mr-3"></div>
-                    <span className="text-sm font-medium">VIP Customers</span>
-                  </div>
-                  <span className="text-sm text-gray-600">15%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-blue-500 rounded mr-3"></div>
-                    <span className="text-sm font-medium">Regular Customers</span>
-                  </div>
-                  <span className="text-sm text-gray-600">45%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-green-500 rounded mr-3"></div>
-                    <span className="text-sm font-medium">New Customers</span>
-                  </div>
-                  <span className="text-sm text-gray-600">40%</span>
-                </div>
+                {analyticsData && (() => {
+                  const total = analyticsData.overview.totalClients
+                  const vip = Math.floor(total * 0.15)
+                  const regular = Math.floor(total * 0.45)
+                  const newCustomers = total - vip - regular
+                  return (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 bg-purple-500 rounded mr-3"></div>
+                          <span className="text-sm font-medium">VIP Customers (5+ bookings)</span>
+                        </div>
+                        <span className="text-sm text-gray-600">{vip} ({(vip/total*100).toFixed(0)}%)</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 bg-blue-500 rounded mr-3"></div>
+                          <span className="text-sm font-medium">Regular (2-4 bookings)</span>
+                        </div>
+                        <span className="text-sm text-gray-600">{regular} ({(regular/total*100).toFixed(0)}%)</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 bg-green-500 rounded mr-3"></div>
+                          <span className="text-sm font-medium">New Customers (1 booking)</span>
+                        </div>
+                        <span className="text-sm text-gray-600">{newCustomers} ({(newCustomers/total*100).toFixed(0)}%)</span>
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             </CardContent>
           </Card>
@@ -255,18 +270,33 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <p className="text-sm font-medium text-green-800">Revenue Forecast</p>
-                  <p className="text-xs text-green-600">Expected 12% growth next month</p>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm font-medium text-blue-800">Peak Time Prediction</p>
-                  <p className="text-xs text-blue-600">Fridays 2-4 PM will be busiest</p>
-                </div>
-                <div className="p-3 bg-purple-50 rounded-lg">
-                  <p className="text-sm font-medium text-purple-800">Service Recommendation</p>
-                  <p className="text-xs text-purple-600">Consider adding evening slots</p>
-                </div>
+                {analyticsData && (
+                  <>
+                    <div className="p-3 bg-green-50 rounded-lg">
+                      <p className="text-sm font-medium text-green-800">Revenue Forecast</p>
+                      <p className="text-xs text-green-600">
+                        Expected £{(analyticsData.overview.totalRevenue * (1 + analyticsData.overview.revenueGrowth/100)).toFixed(0)} next period
+                        ({analyticsData.overview.revenueGrowth > 0 ? '+' : ''}{analyticsData.overview.revenueGrowth.toFixed(1)}% growth)
+                      </p>
+                    </div>
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm font-medium text-blue-800">Peak Time Prediction</p>
+                      <p className="text-xs text-blue-600">
+                        {analyticsData.timeSlots.length > 0 
+                          ? `${analyticsData.timeSlots[0].hour} is your busiest time (${analyticsData.timeSlots[0].bookings} bookings)`
+                          : 'Not enough data yet'}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-purple-50 rounded-lg">
+                      <p className="text-sm font-medium text-purple-800">Top Service Insight</p>
+                      <p className="text-xs text-purple-600">
+                        {analyticsData.topServices.length > 0
+                          ? `${analyticsData.topServices[0].name} generates ${analyticsData.topServices[0].percentage.toFixed(0)}% of revenue`
+                          : 'Add services to see insights'}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -66,33 +66,18 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Business not found' }, { status: 404 })
     }
 
-    const business = user.businesses[0]
+    const now = new Date()
 
-    // Check if member exists and belongs to this business
-    const member = await prisma.staff.findFirst({
-      where: {
-        id: params.id,
-        businessId: business.id
-      }
+    // Calculate when funds will be available (immediately for now, can add delay if needed)
+    const fundsAvailableAt = new Date()
+
+    // Update booking status to completed
+    await prisma.booking.update({
+      where: { id: params.id },
+      data: { status: 'COMPLETED', completedAt: now }
     })
 
-    if (!member) {
-      return NextResponse.json({ error: 'Team member not found' }, { status: 404 })
-    }
-
-    // Don't allow deleting the owner
-    if (member.role === 'Owner') {
-      return NextResponse.json({ error: 'Cannot delete business owner' }, { status: 403 })
-    }
-
-    // Check if staff member has any bookings
-    const bookingsCount = await prisma.booking.count({
-      where: {
-        staffId: params.id
-      }
-    })
-
-    if (bookingsCount > 0) {
+    return NextResponse.json({ success: true, message: 'Booking marked as completed' })
       // Instead of deleting, deactivate the staff member and update bookings
       await prisma.$transaction([
         // Deactivate the staff member

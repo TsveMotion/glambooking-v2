@@ -161,6 +161,7 @@ export async function GET(req: NextRequest) {
       take: 5
     })
 
+    const businessData = business as any
     const dashboardData = {
       business: {
         id: business.id,
@@ -168,6 +169,8 @@ export async function GET(req: NextRequest) {
         email: business.email,
         phone: business.phone,
         address: business.address,
+        plan: businessData.plan || 'free',
+        maxStaff: businessData.maxStaff || 1,
         servicesCount: business.services.length,
         staffCount: business.staff.length,
         services: business.services.map(service => ({

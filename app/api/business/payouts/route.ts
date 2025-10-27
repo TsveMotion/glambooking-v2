@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
+import { calculatePayoutDistribution } from '@/lib/payouts/calculate-payout-distribution'
 
 export const runtime = 'nodejs'
 
@@ -13,7 +14,9 @@ interface PayoutData {
   availableBalance: number
   pendingBalance: number
   totalEarnings: number
+  totalRevenueLessFeesOwnerEarnings: number
   platformFees: number
+  staffEarnings: number
   payoutHistory: PayoutTransaction[]
   nextPayoutDate: string
   stripeConnected: boolean
@@ -63,53 +66,28 @@ export async function GET(req: NextRequest) {
 
     const business = user.businesses[0]
 
-    // Get business settings for commission calculation
-    const customization = await prisma.businessCustomization.findUnique({
-      where: { businessId: business.id }
+    // Get business owner
+    const owner = await prisma.user.findUnique({
+      where: { id: business.ownerId }
     })
 
-    const settings = customization?.settings as any || {}
-    const staffCommissionRate = settings.staffCommissionRate || 60
-
-    // Get all completed payments for this business
-    const completedPayments = await prisma.payment.findMany({
-      where: {
-        status: 'COMPLETED',
-        booking: {
-          businessId: business.id
-        }
-      },
-      include: {
-        booking: {
-          include: {
-            service: true,
-            staff: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
+    const { allocations, totals } = await calculatePayoutDistribution({
+      businessId: business.id,
+      owner: {
+        id: owner?.id || user.id,
+        firstName: owner?.firstName || user.firstName,
+        lastName: owner?.lastName || user.lastName,
+        email: owner?.email || user.email
       }
     })
 
-    // Calculate balances
-    let totalRevenue = 0
-    let totalPlatformFees = 0
-    let totalBusinessEarnings = 0
+    const ownerAllocation = allocations.find((member) => member.isOwner)
 
-    for (const payment of completedPayments) {
-      const amount = parseFloat(payment.amount.toString())
-      const platformFee = parseFloat(payment.platformFee.toString())
-      const businessAmount = parseFloat(payment.businessAmount.toString())
-      
-      totalRevenue += amount
-      totalPlatformFees += platformFee
-      
-      // Calculate business earnings after staff commission
-      const staffEarnings = (businessAmount * staffCommissionRate) / 100
-      const businessEarnings = businessAmount - staffEarnings
-      totalBusinessEarnings += businessEarnings
-    }
+    const totalRevenue = totals.totalGross
+    const ownerEarnings = totals.ownerTotal
+    const staffEarnings = totals.staffTotal
+    const totalPlatformFees = totals.platformFees
+
 
     // Get payout history
     const payoutHistory = await prisma.payout.findMany({
@@ -131,20 +109,8 @@ export async function GET(req: NextRequest) {
       stripeTransferId: payout.stripeTransferId || undefined
     }))
 
-    // Calculate pending balance (recent unpaid earnings)
-    const thisWeek = new Date()
-    thisWeek.setDate(thisWeek.getDate() - 7)
-    
-    const recentPayments = completedPayments.filter(p => 
-      p.createdAt >= thisWeek
-    )
-
-    const pendingBalance = recentPayments.reduce((sum, payment) => {
-      const businessAmount = parseFloat(payment.businessAmount.toString())
-      const staffEarnings = (businessAmount * staffCommissionRate) / 100
-      const businessEarnings = businessAmount - staffEarnings
-      return sum + businessEarnings
-    }, 0)
+    // Pending balance shows owner's total earnings (staff earnings go directly to staff)
+    const pendingBalance = totals.ownerTotal
 
     // Calculate next payout date (weekly on Fridays)
     const nextPayout = new Date()
@@ -177,13 +143,15 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const availableBalance = totalBusinessEarnings - pendingBalance
+    const availableBalance = ownerEarnings - pendingBalance
 
     const payoutData: PayoutData = {
       availableBalance: Math.max(0, availableBalance),
       pendingBalance,
-      totalEarnings: totalBusinessEarnings,
+      totalEarnings: totalRevenue, // Show total revenue, not just owner earnings
+      totalRevenueLessFeesOwnerEarnings: ownerEarnings,
       platformFees: totalPlatformFees,
+      staffEarnings: staffEarnings,
       payoutHistory: formattedPayoutHistory,
       nextPayoutDate: nextPayout.toISOString().split('T')[0],
       stripeConnected,

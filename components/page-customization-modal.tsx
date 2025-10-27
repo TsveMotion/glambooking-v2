@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, Save, Loader2, Upload, Palette, Type, Image, ExternalLink } from 'lucide-react'
+import CloudinaryUpload from './cloudinary-upload'
 
 interface CustomizationSettings {
   primaryColor: string
@@ -12,6 +13,7 @@ interface CustomizationSettings {
   headingFont: string
   bodyFont: string
   logoUrl: string
+  backgroundImageUrl: string
   businessName: string
   tagline: string
   headerText: string
@@ -40,6 +42,7 @@ export default function PageCustomizationModal({
     headingFont: 'Inter',
     bodyFont: 'Inter',
     logoUrl: '',
+    backgroundImageUrl: '',
     businessName: 'GlamBooking',
     tagline: 'Book your beauty services',
     headerText: 'Choose Your Perfect Service',
@@ -47,13 +50,31 @@ export default function PageCustomizationModal({
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState<'colors' | 'content'>('colors')
+  const [activeTab, setActiveTab] = useState<'colors' | 'content' | 'fonts'>('colors')
+  const [currentPlan, setCurrentPlan] = useState<string>('free')
 
   useEffect(() => {
     if (isOpen) {
       fetchSettings()
+      fetchPlan()
     }
   }, [isOpen])
+
+  const fetchPlan = async () => {
+    try {
+      const response = await fetch('/api/business/plan-status')
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentPlan(data.plan || 'free')
+      }
+    } catch (error) {
+      console.error('Error fetching plan:', error)
+    }
+  }
+
+  const hasProFeatures = () => {
+    return currentPlan === 'professional' || currentPlan === 'enterprise'
+  }
 
   const fetchSettings = async () => {
     try {
@@ -151,6 +172,7 @@ export default function PageCustomizationModal({
         <div className="flex border-b px-6">
           {[
             { id: 'colors', label: 'Colors', icon: Palette },
+            { id: 'fonts', label: 'Fonts', icon: Type },
             { id: 'content', label: 'Content', icon: Image }
           ].map(({ id, label, icon: Icon }) => (
             <button
@@ -314,6 +336,69 @@ export default function PageCustomizationModal({
           )}
 
 
+          {/* Fonts Tab */}
+          {activeTab === 'fonts' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900">Typography</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Heading Font
+                  </label>
+                  <select
+                    value={settings.headingFont}
+                    onChange={(e) => handleSettingChange('headingFont', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-glam-pink focus:border-transparent"
+                  >
+                    <option value="Inter">Inter (Default - Clean & Modern)</option>
+                    <option value="Playfair Display">Playfair Display (Elegant)</option>
+                    <option value="Montserrat">Montserrat (Bold & Professional)</option>
+                    <option value="Lora">Lora (Classic Serif)</option>
+                    <option value="Poppins">Poppins (Friendly & Round)</option>
+                    <option value="Raleway">Raleway (Sophisticated)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Body Font
+                  </label>
+                  <select
+                    value={settings.bodyFont}
+                    onChange={(e) => handleSettingChange('bodyFont', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-glam-pink focus:border-transparent"
+                  >
+                    <option value="Inter">Inter (Default - Clean & Readable)</option>
+                    <option value="Open Sans">Open Sans (Friendly)</option>
+                    <option value="Roboto">Roboto (Modern)</option>
+                    <option value="Lato">Lato (Professional)</option>
+                    <option value="Source Sans Pro">Source Sans Pro (Clean)</option>
+                  </select>
+                </div>
+
+                {/* Font Preview */}
+                <div className="mt-6 p-6 rounded-lg border-2 border-gray-200">
+                  <h4 className="text-sm font-medium text-gray-700 mb-4">Font Preview</h4>
+                  <div className="space-y-4">
+                    <h2 
+                      className="text-3xl font-bold"
+                      style={{ fontFamily: settings.headingFont, color: settings.primaryColor }}
+                    >
+                      This is a Heading
+                    </h2>
+                    <p 
+                      className="text-base"
+                      style={{ fontFamily: settings.bodyFont, color: settings.textColor }}
+                    >
+                      This is body text. It should be easy to read and comfortable for your customers. 
+                      The right font choice can make your booking page look more professional and trustworthy.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Content Tab */}
           {activeTab === 'content' && (
             <div className="space-y-6">
@@ -371,33 +456,54 @@ export default function PageCustomizationModal({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Logo URL
-                  </label>
-                  <div className="flex gap-3">
-                    <input
-                      type="url"
-                      value={settings.logoUrl}
-                      onChange={(e) => handleSettingChange('logoUrl', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-glam-pink focus:border-transparent"
-                      placeholder="https://example.com/logo.png"
-                    />
-                    <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
-                      <Upload className="w-4 h-4" />
-                      Upload
-                    </button>
+                {/* Logo Upload - Professional/Enterprise Only */}
+                <div className={!hasProFeatures() ? 'opacity-50 pointer-events-none' : ''}>
+                  <div className="flex items-center justify-between mb-2">
+                    {!hasProFeatures() && (
+                      <span className="text-xs text-purple-600 font-medium">Pro Feature</span>
+                    )}
                   </div>
-                  {settings.logoUrl && (
-                    <div className="mt-3">
-                      <img 
-                        src={settings.logoUrl} 
-                        alt="Logo preview" 
-                        className="h-16 object-contain border rounded-lg"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none'
-                        }}
-                      />
+                  {hasProFeatures() ? (
+                    <CloudinaryUpload
+                      label="Logo"
+                      currentImage={settings.logoUrl}
+                      onUploadComplete={(url) => handleSettingChange('logoUrl', url)}
+                      maxSize={5}
+                      aspectRatio="Logo"
+                    />
+                  ) : (
+                    <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600 mb-1">Logo Upload</p>
+                      <p className="text-xs text-gray-500">
+                        Upgrade to Professional or Enterprise to add your custom logo
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Background Image - Professional/Enterprise Only */}
+                <div className={!hasProFeatures() ? 'opacity-50 pointer-events-none' : ''}>
+                  <div className="flex items-center justify-between mb-2">
+                    {!hasProFeatures() && (
+                      <span className="text-xs text-purple-600 font-medium">Pro Feature</span>
+                    )}
+                  </div>
+                  {hasProFeatures() ? (
+                    <CloudinaryUpload
+                      label="Background Image"
+                      currentImage={settings.backgroundImageUrl}
+                      onUploadComplete={(url) => handleSettingChange('backgroundImageUrl', url)}
+                      maxSize={5}
+                      aspectRatio="16:9 or 1920x1080"
+                    />
+                  ) : (
+                    <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600 mb-1">Background Image Upload</p>
+                      <p className="text-xs text-gray-500">
+                        Upgrade to Professional or Enterprise to add a custom background image
+                      </p>
                     </div>
                   )}
                 </div>
