@@ -73,18 +73,18 @@ export default function PricingPage() {
 
   const plans: Plan[] = [
     {
-      id: 'starter',
-      name: 'Starter',
-      price: 30,
-      description: 'Perfect for solo practitioners and small salons',
-      maxStaff: 3,
-      transactionFee: 5,
+      id: 'free',
+      name: 'Free',
+      price: 0,
+      description: 'Perfect for solo practitioners just getting started',
+      maxStaff: 1,
+      transactionFee: 10,
       features: [
-        { text: 'Up to 3 staff members', included: true },
+        { text: '1 staff member only', included: true },
         { text: 'Unlimited bookings', included: true },
         { text: 'Basic analytics', included: true },
         { text: 'Email notifications', included: true },
-        { text: 'Standard support', included: true },
+        { text: 'Community support', included: true },
         { text: 'Custom booking page', included: true },
         { text: 'SMS notifications', included: false },
         { text: 'Custom branding', included: false },
@@ -93,44 +93,65 @@ export default function PricingPage() {
       ]
     },
     {
-      id: 'professional',
-      name: 'Professional',
-      price: 50,
-      description: 'Ideal for growing businesses with multiple staff',
+      id: 'starter',
+      name: 'Starter',
+      price: 19,
+      description: 'Great for small salons with multiple staff',
       popular: true,
-      maxStaff: 10,
+      maxStaff: 5,
       transactionFee: 5,
       features: [
-        { text: 'Up to 10 staff members', included: true },
+        { text: 'Up to 5 staff members', included: true },
         { text: 'Unlimited bookings', included: true },
         { text: 'Advanced analytics', included: true },
         { text: 'Email notifications', included: true },
+        { text: 'Priority support', included: true },
+        { text: 'Custom booking page', included: true },
+        { text: 'Basic branding', included: true },
+        { text: 'SMS notifications', included: false },
+        { text: 'Marketing tools', included: false },
+        { text: 'Multi-location support', included: false }
+      ]
+    },
+    {
+      id: 'professional',
+      name: 'Professional',
+      price: 39,
+      description: 'Ideal for growing businesses with multiple locations',
+      maxStaff: 15,
+      transactionFee: 3,
+      features: [
+        { text: 'Up to 15 staff members', included: true },
+        { text: 'Unlimited bookings', included: true },
+        { text: 'Premium analytics', included: true },
+        { text: 'Email notifications', included: true },
         { text: 'SMS notifications', included: true },
         { text: 'Priority support', included: true },
-        { text: 'Custom branding', included: true },
+        { text: 'Full custom branding', included: true },
         { text: 'Marketing tools', included: true },
-        { text: 'Custom booking page', included: true },
-        { text: 'Multi-location support', included: false }
+        { text: 'Multi-location support', included: true },
+        { text: 'API access', included: false }
       ]
     },
     {
       id: 'enterprise',
       name: 'Enterprise',
-      price: 100,
-      description: 'For large salons and multi-location businesses',
+      price: 79,
+      description: 'For large salons and franchise businesses',
       maxStaff: -1,
-      transactionFee: 5,
+      transactionFee: 2,
       features: [
         { text: 'Unlimited staff members', included: true },
         { text: 'Unlimited bookings', included: true },
-        { text: 'Premium analytics', included: true },
+        { text: 'Enterprise analytics', included: true },
         { text: 'Email notifications', included: true },
         { text: 'SMS notifications', included: true },
-        { text: 'Dedicated support', included: true },
-        { text: 'Custom branding', included: true },
-        { text: 'Marketing tools', included: true },
+        { text: 'Dedicated support manager', included: true },
+        { text: 'White-label branding', included: true },
+        { text: 'Advanced marketing suite', included: true },
         { text: 'Multi-location support', included: true },
-        { text: 'API access', included: true }
+        { text: 'API access', included: true },
+        { text: 'Custom integrations', included: true }
       ]
     }
   ]
@@ -162,11 +183,11 @@ export default function PricingPage() {
 
   const isCurrentPlan = (planId: string) => planId === currentPlan
   const isUpgrade = (planId: string) => {
-    const planOrder = { starter: 1, professional: 2, enterprise: 3 }
+    const planOrder = { free: 0, starter: 1, professional: 2, enterprise: 3 }
     return planOrder[planId as keyof typeof planOrder] > planOrder[currentPlan as keyof typeof planOrder]
   }
   const isDowngrade = (planId: string) => {
-    const planOrder = { starter: 1, professional: 2, enterprise: 3 }
+    const planOrder = { free: 0, starter: 1, professional: 2, enterprise: 3 }
     return planOrder[planId as keyof typeof planOrder] < planOrder[currentPlan as keyof typeof planOrder]
   }
 
@@ -223,7 +244,7 @@ export default function PricingPage() {
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto mb-16">
         {plans.map((plan) => (
           <Card 
             key={plan.id} 

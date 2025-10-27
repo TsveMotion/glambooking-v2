@@ -45,8 +45,11 @@ export async function GET(req: NextRequest) {
       business = await prisma.business.create({
         data: {
           name: `${user.firstName || 'My'} Beauty Business`,
-          ownerId: user.id
-        },
+          ownerId: user.id,
+          plan: 'free',
+          maxStaff: 1,
+          bookingFeePercentage: 10.0
+        } as any,
         include: {
           staff: {
             orderBy: { createdAt: 'desc' }
@@ -66,10 +69,13 @@ export async function GET(req: NextRequest) {
       business = user.businesses[0]
     }
 
-    // Get business plan (you might want to add this to your business model)
+    // Get business plan from database (with type assertion until Prisma client updates)
+    const businessData = business as any
+    const currentPlan = businessData.plan || 'free' // Default to free plan
+    
     const businessWithPlan = {
       ...business,
-      plan: 'starter', // Default plan, you can implement plan detection logic
+      plan: currentPlan,
       teamMembers: business.staff.map(member => ({
         id: member.id,
         firstName: member.firstName,
@@ -143,8 +149,11 @@ export async function POST(req: NextRequest) {
       business = await prisma.business.create({
         data: {
           name: `${user.firstName || 'My'} Beauty Business`,
-          ownerId: user.id
-        },
+          ownerId: user.id,
+          plan: 'free',
+          maxStaff: 1,
+          bookingFeePercentage: 10.0
+        } as any,
         include: {
           staff: true
         }

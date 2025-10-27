@@ -50,7 +50,7 @@ interface PendingInvitation {
 interface Business {
   id: string
   name: string
-  plan: 'starter' | 'professional' | 'enterprise'
+  plan: 'free' | 'starter' | 'professional' | 'enterprise'
   teamMembers: TeamMember[]
   pendingInvitations: PendingInvitation[]
 }
@@ -101,10 +101,11 @@ export default function TeamPage() {
 
   const getPlanLimits = (plan: string) => {
     switch (plan) {
-      case 'starter': return { maxTeam: 3, name: 'Starter' }
-      case 'professional': return { maxTeam: 10, name: 'Professional' }
-      case 'enterprise': return { maxTeam: -1, name: 'Enterprise' }
-      default: return { maxTeam: 3, name: 'Starter' }
+      case 'free': return { maxTeam: 1, name: 'Free', fee: '10%' }
+      case 'starter': return { maxTeam: 5, name: 'Starter', fee: '5%' }
+      case 'professional': return { maxTeam: 15, name: 'Professional', fee: '3%' }
+      case 'enterprise': return { maxTeam: -1, name: 'Enterprise', fee: '2%' }
+      default: return { maxTeam: 1, name: 'Free', fee: '10%' }
     }
   }
 
@@ -114,8 +115,9 @@ export default function TeamPage() {
       return
     }
 
-    const planLimits = getPlanLimits(business?.plan || 'starter')
-    const currentTeamSize = (business?.teamMembers?.length || 0) + (business?.pendingInvitations?.length || 0)
+    const planLimits = getPlanLimits(business?.plan || 'free')
+    const activeTeamMembers = business?.teamMembers?.filter(member => !member.firstName.startsWith('[REMOVED]')) || []
+    const currentTeamSize = activeTeamMembers.length + (business?.pendingInvitations?.length || 0)
 
     if (planLimits.maxTeam !== -1 && currentTeamSize >= planLimits.maxTeam) {
       alert(`Your ${planLimits.name} plan allows up to ${planLimits.maxTeam} team members. Please upgrade to add more.`)
@@ -162,7 +164,7 @@ export default function TeamPage() {
   }
 
   const deleteMember = async (memberId: string) => {
-    if (!confirm('Are you sure you want to remove this team member?')) return
+    if (!confirm('Are you sure you want to remove this team member? If they have bookings, they will be deactivated instead of deleted.')) return
 
     try {
       const response = await fetch(`/api/business/team/${memberId}`, {
@@ -170,7 +172,12 @@ export default function TeamPage() {
       })
 
       if (response.ok) {
+        const result = await response.json()
+        alert(result.message || 'Team member removed successfully')
         fetchTeamData()
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to remove team member')
       }
     } catch (error) {
       alert('Failed to remove team member')
@@ -237,8 +244,9 @@ export default function TeamPage() {
     )
   }
 
-  const planLimits = getPlanLimits(business?.plan || 'starter')
-  const currentTeamSize = (business?.teamMembers?.length || 0) + (business?.pendingInvitations?.length || 0)
+  const planLimits = getPlanLimits(business?.plan || 'free')
+  const activeTeamMembers = business?.teamMembers?.filter(member => !member.firstName.startsWith('[REMOVED]')) || []
+  const currentTeamSize = activeTeamMembers.length + (business?.pendingInvitations?.length || 0)
   const canAddMore = planLimits.maxTeam === -1 || currentTeamSize < planLimits.maxTeam
 
   return (
@@ -250,6 +258,16 @@ export default function TeamPage() {
           <p className="text-gray-600">
             Manage your team members and their access ({currentTeamSize}/{planLimits.maxTeam === -1 ? '∞' : planLimits.maxTeam} members)
           </p>
+          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Transaction Fee: {planLimits.fee} per booking</strong>
+              {business?.plan === 'free' && (
+                <span className="block text-blue-600 mt-1">
+                  Upgrade to reduce your booking fees and unlock more features
+                </span>
+              )}
+            </p>
+          </div>
         </div>
         <Button 
           onClick={() => setShowAddModal(true)}
@@ -275,7 +293,11 @@ export default function TeamPage() {
                   </p>
                 </div>
               </div>
-              <Button variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100">
+              <Button 
+                variant="outline" 
+                className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                onClick={() => router.push('/business/pricing')}
+              >
                 Upgrade Plan
               </Button>
             </div>
@@ -362,10 +384,10 @@ export default function TeamPage() {
       <div className="mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <Users className="w-5 h-5 mr-2 text-green-500" />
-          Active Team Members ({business?.teamMembers?.length || 0})
+          Active Team Members ({business?.teamMembers?.filter(member => !member.firstName.startsWith('[REMOVED]')).length || 0})
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {business?.teamMembers?.map((member) => (
+        {business?.teamMembers?.filter(member => !member.firstName.startsWith('[REMOVED]')).map((member) => (
           <Card key={member.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">

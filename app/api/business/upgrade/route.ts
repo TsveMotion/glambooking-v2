@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     const { planId, currentPlan } = await req.json()
 
-    if (!planId || !['starter', 'professional', 'enterprise'].includes(planId)) {
+    if (!planId || !['free', 'starter', 'professional', 'enterprise'].includes(planId)) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
 
@@ -43,19 +43,27 @@ export async function POST(req: NextRequest) {
 
     // Plan pricing
     const planPricing = {
-      starter: { price: 3000, name: 'Starter Plan' }, // £30.00 in pence
-      professional: { price: 5000, name: 'Professional Plan' }, // £50.00 in pence
-      enterprise: { price: 10000, name: 'Enterprise Plan' } // £100.00 in pence
+      free: { price: 0, name: 'Free Plan' }, // £0.00 - no subscription needed
+      starter: { price: 1900, name: 'Starter Plan' }, // £19.00 in pence
+      professional: { price: 3900, name: 'Professional Plan' }, // £39.00 in pence
+      enterprise: { price: 7900, name: 'Enterprise Plan' } // £79.00 in pence
     }
 
     const selectedPlan = planPricing[planId as keyof typeof planPricing]
 
-    // In a real app, you would:
-    // 1. Cancel the existing subscription immediately
-    // 2. Create a new subscription with the new plan
-    // 3. Prorate the billing
+    // Handle downgrade to Free plan (no Stripe checkout needed)
+    if (planId === 'free') {
+      // TODO: In production, cancel existing subscription and update business plan
+      console.log(`Downgrade to Free plan initiated for business ${business.id}`)
+      
+      // For now, redirect to success page
+      return NextResponse.json({ 
+        checkoutUrl: `${process.env.NEXT_PUBLIC_APP_URL}/business/manage-plan?downgrade=success&plan=free`,
+        isFreeDowngrade: true
+      })
+    }
 
-    // For now, we'll create a checkout session that represents the upgrade
+    // For paid plans, create a checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',

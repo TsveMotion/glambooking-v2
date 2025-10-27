@@ -30,21 +30,31 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    const business = user.businesses[0]
-
-    // Check if user has completed a successful payment
-    // For now, if they have a business, they have an active plan
+    const business = user.businesses[0] as any // Type assertion until Prisma client updates
+    
+    // Get current plan from business data
+    const currentPlan = business.plan || 'free'
     const hasActivePlan = true // All users with businesses have active plans
+    
+    const getPlanName = (plan: string) => {
+      switch (plan) {
+        case 'free': return 'Free Plan'
+        case 'starter': return 'Starter Plan'
+        case 'professional': return 'Professional Plan'
+        case 'enterprise': return 'Enterprise Plan'
+        default: return 'Free Plan'
+      }
+    }
     
     if (hasActivePlan) {
       return NextResponse.json({
         hasActivePlan: true,
-        hasActiveSubscription: true,
-        plan: 'starter',
-        planName: 'Starter Plan',
+        hasActiveSubscription: currentPlan !== 'free',
+        plan: currentPlan,
+        planName: getPlanName(currentPlan),
         status: 'active',
-        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        subscriptionId: 'sub_mock_123'
+        nextBillingDate: currentPlan !== 'free' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
+        subscriptionId: currentPlan !== 'free' ? `sub_${business.id.slice(0, 8)}` : null
       })
     }
 

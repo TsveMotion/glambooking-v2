@@ -27,6 +27,7 @@ function BusinessDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false)
+  const [businessPlan, setBusinessPlan] = useState<string>('free')
   
   
   useEffect(() => {
@@ -56,6 +57,10 @@ function BusinessDashboard() {
       
       const data = await response.json()
       setDashboardData(data)
+      // Set business plan from dashboard data
+      if (data.business?.plan) {
+        setBusinessPlan(data.business.plan)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -91,8 +96,45 @@ function BusinessDashboard() {
 
   const { business, metrics, upcomingBookings, recentBookings } = dashboardData
 
+  const getPlanLimits = (plan: string) => {
+    switch (plan) {
+      case 'free': return { name: 'Free', fee: '10%' }
+      case 'starter': return { name: 'Starter', fee: '5%' }
+      case 'professional': return { name: 'Professional', fee: '3%' }
+      case 'enterprise': return { name: 'Enterprise', fee: '2%' }
+      default: return { name: 'Free', fee: '10%' }
+    }
+  }
+
+  const planLimits = getPlanLimits(businessPlan)
+
   return (
     <div className="p-6">
+      {/* Transaction Fee Banner */}
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-blue-800">
+              <strong>Current Plan: {planLimits.name} • Transaction Fee: {planLimits.fee} per booking</strong>
+            </p>
+            {businessPlan === 'free' && (
+              <p className="text-xs text-blue-600 mt-1">
+                Upgrade to reduce your booking fees and unlock more features
+              </p>
+            )}
+          </div>
+          {businessPlan === 'free' && (
+            <Button 
+              size="sm"
+              onClick={() => router.push('/business/pricing')}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Upgrade Plan
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-shadow">

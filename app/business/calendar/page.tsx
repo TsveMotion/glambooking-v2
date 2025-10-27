@@ -41,6 +41,8 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [showBookingForm, setShowBookingForm] = useState(false)
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('day')
+  const [businessPlan, setBusinessPlan] = useState<string>('free')
+  const [planLoading, setPlanLoading] = useState(true)
 
   useEffect(() => {
     if (isLoaded && !userId) {
@@ -49,9 +51,26 @@ export default function CalendarPage() {
     }
     
     if (isLoaded && userId) {
+      fetchBusinessPlan()
       fetchBookings()
     }
   }, [isLoaded, userId, router, selectedDate])
+
+  const fetchBusinessPlan = async () => {
+    try {
+      setPlanLoading(true)
+      const response = await fetch('/api/business/plan-status')
+      if (response.ok) {
+        const data = await response.json()
+        setBusinessPlan(data.plan || 'free')
+      }
+    } catch (error) {
+      console.error('Error fetching business plan:', error)
+      setBusinessPlan('free')
+    } finally {
+      setPlanLoading(false)
+    }
+  }
 
   const fetchBookings = async () => {
     try {
@@ -69,6 +88,20 @@ export default function CalendarPage() {
       console.error('Error fetching bookings:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const isGoogleCalendarAvailable = () => {
+    return businessPlan === 'professional' || businessPlan === 'enterprise'
+  }
+
+  const getPlanLimits = (plan: string) => {
+    switch (plan) {
+      case 'free': return { name: 'Free', fee: '10%' }
+      case 'starter': return { name: 'Starter', fee: '5%' }
+      case 'professional': return { name: 'Professional', fee: '3%' }
+      case 'enterprise': return { name: 'Enterprise', fee: '2%' }
+      default: return { name: 'Free', fee: '10%' }
     }
   }
 
@@ -124,12 +157,24 @@ export default function CalendarPage() {
     )
   }
 
+  const planLimits = getPlanLimits(businessPlan)
+
   return (
     <div className="p-6">
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <p className="text-gray-600 text-sm sm:text-base">Manage your appointments and schedule</p>
+          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Transaction Fee: {planLimits.fee} per booking</strong>
+              {businessPlan === 'free' && (
+                <span className="block text-blue-600 mt-1">
+                  Upgrade to reduce your booking fees and unlock more features
+                </span>
+              )}
+            </p>
+          </div>
         </div>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
@@ -145,7 +190,43 @@ export default function CalendarPage() {
 
       {/* Google Calendar Integration */}
       <div className="mb-6">
-        <GoogleCalendarSync onSync={fetchBookings} />
+        {isGoogleCalendarAvailable() ? (
+          <GoogleCalendarSync onSync={fetchBookings} />
+        ) : (
+          <Card className="border-2 border-dashed border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CalendarIcon className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Google Calendar Integration
+                </h3>
+                <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                  Sync your appointments with Google Calendar automatically. Available for Professional and Enterprise plans.
+                </p>
+                <div className="bg-white rounded-lg p-4 mb-4 border border-amber-200">
+                  <h4 className="font-semibold text-amber-800 mb-2">Professional Plan Features:</h4>
+                  <ul className="text-sm text-amber-700 space-y-1">
+                    <li>• Two-way Google Calendar sync</li>
+                    <li>• Automatic appointment updates</li>
+                    <li>• Multi-location support</li>
+                    <li>• Only 3% booking fee</li>
+                  </ul>
+                </div>
+                <Button 
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                  onClick={() => router.push('/business/pricing')}
+                >
+                  Upgrade to Professional - £39/month
+                </Button>
+                <p className="text-xs text-gray-500 mt-2">
+                  Current plan: {planLimits.name} ({planLimits.fee} booking fee)
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Calendar Controls */}

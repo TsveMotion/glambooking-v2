@@ -44,18 +44,23 @@ export async function GET(req: NextRequest) {
       business = user.businesses[0]
     }
 
-    // User has paid for subscription - show active plan
-    const currentPlan: 'starter' | 'professional' | 'enterprise' = 'starter' // Default plan
-    const planStatus: 'active' | 'cancelled' | 'past_due' = 'active' // User has paid!
+    // Get current plan from business data (with type assertion until Prisma client updates)
+    const businessData = business as any
+    const currentPlan = businessData.plan || 'free' // Default to free plan
+    const planStatus: 'active' | 'cancelled' | 'past_due' = 'active'
     
     const getPlanDetails = (plan: string) => {
       switch (plan) {
+        case 'free':
+          return { name: 'Free', price: 0, maxStaff: 1 }
+        case 'starter':
+          return { name: 'Starter', price: 19, maxStaff: 5 }
         case 'professional':
-          return { name: 'Professional', price: 50, maxStaff: 10 }
+          return { name: 'Professional', price: 39, maxStaff: 15 }
         case 'enterprise':
-          return { name: 'Enterprise', price: 100, maxStaff: -1 }
+          return { name: 'Enterprise', price: 79, maxStaff: -1 }
         default:
-          return { name: 'Starter', price: 30, maxStaff: 3 }
+          return { name: 'Free', price: 0, maxStaff: 1 }
       }
     }
 
