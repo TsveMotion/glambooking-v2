@@ -196,19 +196,34 @@ export default function SuperAdminDashboard() {
 
       // Parse all successful responses
       if (statsRes.ok) {
-        const data = await statsRes.json()
-        console.log('✅ Stats data:', data)
-        setStats(data)
+        try {
+          const text = await statsRes.text()
+          console.log('📄 Stats raw response:', text.substring(0, 200))
+          const data = JSON.parse(text)
+          console.log('✅ Stats data:', data)
+          setStats(data)
+        } catch (e) {
+          console.error('❌ Stats JSON parse error:', e)
+          const text = await statsRes.text()
+          console.error('📄 Stats response was:', text.substring(0, 500))
+        }
       } else {
         const error = await statsRes.text()
         console.error('❌ Stats error:', error)
       }
 
       if (usersRes.ok) {
-        const data = await usersRes.json()
-        console.log('✅ Users data:', data)
-        console.log('👥 Number of users:', data.users?.length || 0)
-        setUsers(data.users || [])
+        try {
+          const text = await usersRes.text()
+          console.log('📄 Users raw response:', text.substring(0, 200))
+          const data = JSON.parse(text)
+          console.log('✅ Users data:', data)
+          console.log('👥 Number of users:', data.users?.length || 0)
+          setUsers(data.users || [])
+        } catch (e) {
+          console.error('❌ Users JSON parse error:', e)
+          console.error('📄 Users response was HTML or invalid JSON')
+        }
       } else {
         const error = await usersRes.text()
         console.error('❌ Users error:', error)

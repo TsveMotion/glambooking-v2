@@ -10,16 +10,23 @@ export const dynamic = 'force-dynamic'
  * Get all users for super admin
  */
 export async function GET(req: NextRequest) {
+  console.log('🔵 Users API: Request received')
   try {
+    console.log('🔵 Users API: Verifying super admin...')
     // Verify super admin authorization
     const authResult = await verifySuperAdmin()
+    console.log('🔵 Users API: Auth result:', authResult)
+    
     if (!authResult.authorized) {
+      console.log('🔵 Users API: Not authorized, returning error')
       return NextResponse.json({ error: authResult.error }, { status: authResult.status })
     }
 
+    console.log('🔵 Users API: Fetching users from Clerk...')
     // Fetch all users from Clerk
     const clerkUsersResponse = await clerkClient.users.getUserList({ limit: 100 })
     const clerkUsers = clerkUsersResponse.data || []
+    console.log('🔵 Users API: Found', clerkUsers.length, 'users from Clerk')
 
     // Get database users for additional data
     const dbUsers = await prisma.user.findMany({
@@ -79,14 +86,16 @@ export async function GET(req: NextRequest) {
     // Sort by creation date descending
     formattedUsers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
+    console.log('✅ Users API: Returning', formattedUsers.length, 'users')
     return NextResponse.json({
       users: formattedUsers,
       total: formattedUsers.length
     })
   } catch (error) {
-    console.error('Error fetching users:', error)
+    console.error('❌ Users API: Error:', error)
+    console.error('❌ Users API: Error stack:', error instanceof Error ? error.stack : 'No stack')
     return NextResponse.json(
-      { error: 'Error fetching users' },
+      { error: 'Error fetching users', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

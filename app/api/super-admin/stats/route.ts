@@ -9,12 +9,19 @@ export const dynamic = 'force-dynamic'
  * Get platform-wide statistics for super admin
  */
 export async function GET(req: NextRequest) {
+  console.log('🔵 Stats API: Request received')
   try {
+    console.log('🔵 Stats API: Verifying super admin...')
     // Verify super admin authorization
     const authResult = await verifySuperAdmin()
+    console.log('🔵 Stats API: Auth result:', authResult)
+    
     if (!authResult.authorized) {
+      console.log('🔵 Stats API: Not authorized, returning error')
       return NextResponse.json({ error: authResult.error }, { status: authResult.status })
     }
+    
+    console.log('🔵 Stats API: Authorized, fetching data...')
 
     // Get all stats in parallel
     const [
@@ -90,7 +97,7 @@ export async function GET(req: NextRequest) {
     const totalRevenueAmount = Number(totalRevenue._sum.totalAmount || 0)
     const platformRevenue = totalRevenueAmount * 0.01 // 1% platform fee
 
-    return NextResponse.json({
+    const responseData = {
       totalUsers,
       totalBusinesses,
       activeBusinesses,
@@ -104,11 +111,15 @@ export async function GET(req: NextRequest) {
       monthlyBookings,
       averageBookingValue: totalBookings > 0 ? totalRevenueAmount / totalBookings : 0,
       completionRate: totalBookings > 0 ? (completedBookings / totalBookings) * 100 : 0
-    })
+    }
+    
+    console.log('✅ Stats API: Returning data:', responseData)
+    return NextResponse.json(responseData)
   } catch (error) {
-    console.error('Error fetching super admin stats:', error)
+    console.error('❌ Stats API: Error:', error)
+    console.error('❌ Stats API: Error stack:', error instanceof Error ? error.stack : 'No stack')
     return NextResponse.json(
-      { error: 'Error fetching statistics' },
+      { error: 'Error fetching statistics', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
