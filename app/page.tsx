@@ -63,15 +63,15 @@ export default function HomePage() {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/pricing">
+                <Link href="/discover">
                   <Button size="lg" variant="glam" className="text-lg px-8 py-4 shadow-xl hover:shadow-2xl transition-all">
-                    Get Started
+                    Find Businesses
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                 </Link>
                 <Link href="/pricing">
                   <Button size="lg" variant="outline" className="text-lg px-8 py-4 border-2 border-glam-pink text-glam-pink hover:bg-glam-pink hover:text-white">
-                    View Pricing
+                    List Your Business
                   </Button>
                 </Link>
               </div>

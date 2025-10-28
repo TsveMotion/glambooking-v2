@@ -43,7 +43,7 @@ export default function ServiceFormModal({
     name: '',
     description: '',
     duration: 60,
-    price: 0,
+    price: 30,
     category: 'General',
     isActive: true
   })
@@ -58,7 +58,7 @@ export default function ServiceFormModal({
         name: '',
         description: '',
         duration: 60,
-        price: 0,
+        price: 30,
         category: 'General',
         isActive: true
       })
@@ -176,12 +176,13 @@ export default function ServiceFormModal({
               <input
                 type="number"
                 required
-                min="0"
+                min="30"
                 step="0.01"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-glam-pink focus:border-transparent"
               />
+              <p className="text-xs text-gray-500 mt-1">Minimum price: £30</p>
             </div>
           </div>
 

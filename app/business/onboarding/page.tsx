@@ -13,10 +13,13 @@ import {
   CheckCircle,
   Sparkles
 } from 'lucide-react'
+import { useWhitelabelTheme } from '@/hooks/use-whitelabel-theme'
+import Image from 'next/image'
 
 export default function BusinessOnboarding() {
   const { user } = useUser()
   const router = useRouter()
+  const { theme, loading: themeLoading } = useWhitelabelTheme()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [businessData, setBusinessData] = useState({
@@ -83,11 +86,16 @@ export default function BusinessOnboarding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       {/* Success Banner */}
-      <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4">
+      <div 
+        className="text-white py-3 px-4"
+        style={{ 
+          background: `linear-gradient(to right, ${theme.primaryColor}, ${theme.secondaryColor})` 
+        }}
+      >
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 text-sm font-medium">
             <CheckCircle className="w-4 h-4" />
-            Payment successful! Welcome to GlamBooking
+            Payment successful! Welcome to {theme.brandName}
           </div>
         </div>
       </div>
@@ -96,9 +104,25 @@ export default function BusinessOnboarding() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-3 rounded-full">
-              <Sparkles className="w-8 h-8 text-white" />
-            </div>
+            {theme.logoUrl ? (
+              <div className="relative w-32 h-32">
+                <Image 
+                  src={theme.logoUrl} 
+                  alt={theme.brandName || 'Logo'} 
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            ) : (
+              <div 
+                className="p-3 rounded-full"
+                style={{ 
+                  background: `linear-gradient(to right, ${theme.primaryColor}, ${theme.secondaryColor})` 
+                }}
+              >
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+            )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
             Set Up Your Business
@@ -118,22 +142,29 @@ export default function BusinessOnboarding() {
               
               return (
                 <div key={step.number} className="flex flex-col items-center flex-1">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
-                    isActive ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white' : 
-                    isCompleted ? 'bg-green-500 text-white' : 
-                    'bg-gray-200 text-gray-600'
-                  }`}>
+                  <div 
+                    className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
+                      isActive ? 'text-white' : 
+                      isCompleted ? 'bg-green-500 text-white' : 
+                      'bg-gray-200 text-gray-600'
+                    }`}
+                    style={isActive ? {
+                      background: `linear-gradient(to right, ${theme.primaryColor}, ${theme.secondaryColor})`
+                    } : undefined}
+                  >
                     {isCompleted ? (
                       <CheckCircle className="w-5 h-5" />
                     ) : (
                       <Icon className="w-5 h-5" />
                     )}
                   </div>
-                  <span className={`text-xs sm:text-sm font-medium text-center ${
-                    isActive ? 'text-purple-600' : 
-                    isCompleted ? 'text-green-600' : 
-                    'text-gray-500'
-                  }`}>
+                  <span 
+                    className={`text-xs sm:text-sm font-medium text-center ${
+                      isCompleted ? 'text-green-600' : 
+                      'text-gray-500'
+                    }`}
+                    style={isActive ? { color: theme.primaryColor } : undefined}
+                  >
                     {step.title}
                   </span>
                   {index < steps.length - 1 && (
@@ -148,8 +179,11 @@ export default function BusinessOnboarding() {
           <div className="relative">
             <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200" />
             <div 
-              className="absolute top-5 left-0 h-0.5 bg-gradient-to-r from-pink-500 to-purple-600 transition-all duration-300"
-              style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
+              className="absolute top-5 left-0 h-0.5 transition-all duration-300"
+              style={{ 
+                width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
+                background: `linear-gradient(to right, ${theme.primaryColor}, ${theme.secondaryColor})`
+              }}
             />
           </div>
         </div>
@@ -331,7 +365,10 @@ export default function BusinessOnboarding() {
                 <Button
                   onClick={() => setCurrentStep(currentStep + 1)}
                   disabled={currentStep === 1 && !businessData.name}
-                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-3 font-semibold disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                  className="text-white px-6 py-3 font-semibold disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                  style={{
+                    background: `linear-gradient(to right, ${theme.primaryColor}, ${theme.secondaryColor})`
+                  }}
                 >
                   Next Step
                   <ArrowRight className="ml-2 w-4 h-4" />
@@ -340,7 +377,10 @@ export default function BusinessOnboarding() {
                 <Button
                   onClick={handleSubmit}
                   disabled={isLoading}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 font-semibold disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                  className="text-white px-6 py-3 font-semibold disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                  style={{
+                    background: `linear-gradient(to right, ${theme.primaryColor}, ${theme.secondaryColor})`
+                  }}
                 >
                   {isLoading ? (
                     <div className="flex items-center">

@@ -25,6 +25,15 @@ interface CustomizationSettings {
   footerText: string
 }
 
+interface ServiceAddon {
+  id: string
+  name: string
+  description: string | null
+  price: number
+  duration: number
+  isActive: boolean
+}
+
 interface Service {
   id: string
   name: string
@@ -33,6 +42,7 @@ interface Service {
   price: number
   category: string
   isActive: boolean
+  addons?: ServiceAddon[]
 }
 
 interface Staff {
@@ -80,6 +90,7 @@ export default function PublicBookingPage() {
   const [staff, setStaff] = useState<Staff[]>([])
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
+  const [selectedAddons, setSelectedAddons] = useState<ServiceAddon[]>([])
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
   const [clientInfo, setClientInfo] = useState({
@@ -156,11 +167,28 @@ export default function PublicBookingPage() {
         setCustomization({ ...customization, ...businessData.business.customization })
       }
 
-      // Fetch services
+      // Fetch services with addons
       const servicesResponse = await fetch(`/api/public/business/${businessId}/services`)
       if (servicesResponse.ok) {
         const servicesData = await servicesResponse.json()
-        setServices(servicesData.services?.filter((s: Service) => s.isActive) || [])
+        const activeServices = servicesData.services?.filter((s: Service) => s.isActive) || []
+        
+        // Fetch addons for each service
+        const servicesWithAddons = await Promise.all(
+          activeServices.map(async (service: Service) => {
+            try {
+              const addonsResponse = await fetch(`/api/public/business/${businessId}/services/${service.id}/addons`)
+              if (addonsResponse.ok) {
+                const addonsData = await addonsResponse.json()
+                return { ...service, addons: addonsData.addons?.filter((a: ServiceAddon) => a.isActive) || [] }
+              }
+            } catch (error) {
+              console.error(`Error fetching addons for service ${service.id}:`, error)
+            }
+            return { ...service, addons: [] }
+          })
+        )
+        setServices(servicesWithAddons)
       }
 
       // Fetch staff
@@ -196,6 +224,11 @@ export default function PublicBookingPage() {
     setIsProcessingPayment(true)
 
     try {
+      // Calculate total amount including addons
+      const addonsTotal = selectedAddons.reduce((sum, addon) => sum + Number(addon.price), 0)
+      const totalAmount = Number(selectedService.price) + addonsTotal
+      const totalDuration = selectedService.duration + selectedAddons.reduce((sum, addon) => sum + addon.duration, 0)
+
       // Create booking and payment intent
       const response = await fetch('/api/public/create-booking', {
         method: 'POST',
@@ -209,7 +242,9 @@ export default function PublicBookingPage() {
           date: selectedDate,
           time: selectedTime,
           clientInfo,
-          totalAmount: selectedService.price
+          totalAmount,
+          totalDuration,
+          addonIds: selectedAddons.map(a => a.id)
         }),
       })
 
@@ -463,6 +498,78 @@ export default function PublicBookingPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Addon Selection */}
+              {selectedService && selectedService.addons && selectedService.addons.length > 0 && (
+                <div className="mt-6 pt-6 border-t">
+                  <h3 className="font-semibold text-lg mb-3" style={{ color: customization.textColor }}>
+                    Optional Add-ons
+                  </h3>
+                  <div className="space-y-2">
+                    {selectedService.addons.map((addon) => (
+                      <div
+                        key={addon.id}
+                        onClick={() => {
+                          setSelectedAddons(prev => {
+                            const isSelected = prev.some(a => a.id === addon.id)
+                            if (isSelected) {
+                              return prev.filter(a => a.id !== addon.id)
+                            }
+                            return [...prev, addon]
+                          })
+                        }}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${
+                          selectedAddons.some(a => a.id === addon.id)
+                            ? 'shadow-sm'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        style={{
+                          borderColor: selectedAddons.some(a => a.id === addon.id)
+                            ? customization.secondaryColor
+                            : undefined,
+                          backgroundColor: selectedAddons.some(a => a.id === addon.id)
+                            ? `${customization.secondaryColor}10`
+                            : undefined
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedAddons.some(a => a.id === addon.id)}
+                                onChange={() => {}}
+                                className="w-4 h-4 rounded"
+                                style={{ accentColor: customization.secondaryColor }}
+                              />
+                              <span className="font-medium" style={{ color: customization.textColor }}>
+                                {addon.name}
+                              </span>
+                            </div>
+                            {addon.description && (
+                              <p className="text-sm mt-1 ml-6 opacity-70" style={{ color: customization.textColor }}>
+                                {addon.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-3 mt-1 ml-6 text-sm opacity-70">
+                              {addon.duration > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  +{addon.duration} min
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1">
+                                <DollarSign className="w-3 h-3" />
+                                £{Number(addon.price).toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -546,11 +653,16 @@ export default function PublicBookingPage() {
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    max={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent text-lg font-medium transition-all"
                     style={{ 
-                      color: customization.textColor
+                      color: customization.textColor,
+                      borderColor: selectedDate ? customization.primaryColor : undefined
                     }}
                   />
+                  <p className="text-xs mt-1 opacity-70" style={{ color: customization.textColor }}>
+                    Available up to 90 days in advance
+                  </p>
                 </div>
               )}
 
@@ -688,13 +800,29 @@ export default function PublicBookingPage() {
                           <strong>Time:</strong> {selectedTime}
                         </p>
                         <p style={{ color: customization.textColor }}>
-                          <strong>Duration:</strong> {selectedService.duration} minutes
+                          <strong>Duration:</strong> {selectedService.duration + selectedAddons.reduce((sum, addon) => sum + addon.duration, 0)} minutes
                         </p>
+                        
+                        <div className="pt-2 mt-2 border-t" style={{ borderColor: customization.textColor + '20' }}>
+                          <p style={{ color: customization.textColor }}>
+                            Service: £{Number(selectedService.price).toFixed(2)}
+                          </p>
+                          {selectedAddons.length > 0 && (
+                            <>
+                              {selectedAddons.map((addon) => (
+                                <p key={addon.id} style={{ color: customization.textColor }} className="text-xs">
+                                  + {addon.name}: £{Number(addon.price).toFixed(2)}
+                                </p>
+                              ))}
+                            </>
+                          )}
+                        </div>
+                        
                         <p 
-                          className="text-lg font-bold mt-2"
-                          style={{ color: customization.primaryColor }}
+                          className="text-lg font-bold mt-2 pt-2 border-t"
+                          style={{ color: customization.primaryColor, borderColor: customization.textColor + '20' }}
                         >
-                          Total: £{selectedService.price}
+                          Total: £{(Number(selectedService.price) + selectedAddons.reduce((sum, addon) => sum + Number(addon.price), 0)).toFixed(2)}
                         </p>
                       </div>
                     </div>

@@ -37,7 +37,8 @@ export async function POST(
       },
       include: {
         service: true,
-        staff: true
+        staff: true,
+        payments: true
       }
     })
 
@@ -49,6 +50,14 @@ export async function POST(
     if (booking.status === 'COMPLETED') {
       return NextResponse.json(
         { error: 'Booking is already completed' },
+        { status: 400 }
+      )
+    }
+
+    // Prevent manual bookings (no payment) from being marked as complete
+    if (!booking.payments || booking.payments.length === 0) {
+      return NextResponse.json(
+        { error: 'Manual bookings cannot be marked as complete. Only paid bookings can be completed to release funds.' },
         { status: 400 }
       )
     }

@@ -2,12 +2,12 @@
 export const PLAN_LIMITS = {
   free: {
     maxStaff: 1,
-    bookingFeePercentage: 5.0, // 5% includes Stripe transaction fees
+    bookingFeePercentage: 5.0, // 5% platform fee + Stripe fees separate
     features: ['Basic analytics', 'Email notifications', 'Community support']
   },
   starter: {
     maxStaff: 5,
-    bookingFeePercentage: 5.0, // 5% includes Stripe transaction fees
+    bookingFeePercentage: 4.0, // 4% platform fee + Stripe fees separate
     features: ['Advanced analytics', 'Email notifications', 'Priority support', 'Basic branding']
   },
   professional: {

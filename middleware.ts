@@ -3,6 +3,8 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'kristiyan@tsvweb.com'
+
 const isProtectedRoute = createRouteMatcher([
   '/business(.*)',
   '/api/business(.*)',
@@ -37,47 +39,38 @@ const middleware = hasClerkKeys
         const isSuperAdminPage = path.startsWith('/super-admin')
         const isAuthRoute = path.startsWith('/sign-in') || path.startsWith('/sign-up')
 
-        const ensureAuthorized = async () => {
+        const ensureAuthorized = async (): Promise<NextResponse> => {
           const { userId } = auth()
           if (!userId) {
-            return { authorized: false, response: NextResponse.redirect(new URL('/sign-in?redirect_url=/super-admin', req.url)) }
+            return NextResponse.redirect(new URL('/sign-in?redirect_url=/super-admin', req.url))
           }
 
           try {
             const { clerkClient } = await import('@clerk/nextjs/server')
             const clerkUser = await clerkClient.users.getUser(userId)
-            const primaryEmail = clerkUser.emailAddresses.find(
-              (email) => email.id === clerkUser.primaryEmailAddressId
+            const email = clerkUser.emailAddresses.find(
+              (e) => e.id === clerkUser.primaryEmailAddressId
             )?.emailAddress
 
-            console.log('🔐 Middleware Super Admin Check:', {
-              userId,
-              email: primaryEmail,
-              path,
-              authorized: primaryEmail?.toLowerCase() === 'kristiyan@tsvweb.com'
-            })
+            const isAuthorized = email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
 
-            if (primaryEmail?.toLowerCase() !== 'kristiyan@tsvweb.com') {
-              console.log('❌ Middleware: Blocking unauthorized access from', primaryEmail)
-              return { authorized: false, response: NextResponse.redirect(new URL('/', req.url)) }
+            if (!isAuthorized) {
+              return NextResponse.redirect(new URL('/', req.url))
             }
 
-            console.log('✅ Middleware: Authorized super admin access')
-            return { authorized: true, response: NextResponse.next() }
+            return NextResponse.next()
           } catch (error) {
-            console.error('❌ Middleware: Error checking super admin email:', error)
-            return { authorized: false, response: NextResponse.redirect(new URL('/', req.url)) }
+            console.error('Middleware: Error checking super admin email:', error)
+            return NextResponse.redirect(new URL('/', req.url))
           }
         }
 
         if (isSuperAdminApiRoute) {
-          const result = await ensureAuthorized()
-          return result.response
+          return await ensureAuthorized()
         }
 
         if (isSuperAdminPage) {
-          const result = await ensureAuthorized()
-          return result.response
+          return await ensureAuthorized()
         }
 
         if (isAuthRoute) {

@@ -5,6 +5,8 @@ import { Plus, Search, Edit, Trash2, Eye, EyeOff, Settings, Users, Clock, Dollar
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ServiceFormModal from '@/components/service-form-modal'
 import PageCustomizationModal from '@/components/page-customization-modal'
+import ServiceAddonsModal from '@/components/service-addons-modal'
+import { BusinessPlanBanner } from '@/components/business-plan-banner'
 
 interface Service {
   id: string
@@ -36,6 +38,10 @@ export default function ServicesPage() {
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [showShareModal, setShowShareModal] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
+  const [businessPlan, setBusinessPlan] = useState<string>('free')
+  const [platformFee, setPlatformFee] = useState<number>(5)
+  const [showAddonsModal, setShowAddonsModal] = useState(false)
+  const [selectedServiceForAddons, setSelectedServiceForAddons] = useState<Service | null>(null)
 
   useEffect(() => {
     fetchServices()
@@ -58,6 +64,8 @@ export default function ServicesPage() {
       if (businessResponse.ok) {
         const businessData = await businessResponse.json()
         setBusinessId(businessData.business?.id || null)
+        setBusinessPlan(businessData.business?.plan || 'free')
+        setPlatformFee(businessData.business?.bookingFeePercentage || 5)
       }
     } catch (error) {
       console.error('Error fetching services:', error)
@@ -215,6 +223,9 @@ export default function ServicesPage() {
           </button>
         </div>
       </div>
+
+      {/* Platform Fee Banner - Only for Free Plan */}
+      <BusinessPlanBanner plan={businessPlan} platformFee={platformFee} />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -384,6 +395,30 @@ export default function ServicesPage() {
                           £{service.totalRevenue?.toFixed(0) || 0} revenue
                         </div>
                       </div>
+                      {(businessPlan === 'professional' || businessPlan === 'enterprise') && (
+                        <div className="mt-3">
+                          <button
+                            onClick={() => {
+                              setSelectedServiceForAddons(service)
+                              setShowAddonsModal(true)
+                            }}
+                            className="text-sm text-glam-pink hover:text-pink-600 font-medium flex items-center gap-1"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Manage Add-ons
+                          </button>
+                        </div>
+                      )}
+                      {(businessPlan === 'free' || businessPlan === 'starter') && (
+                        <div className="mt-3">
+                          <a 
+                            href="/business/pricing"
+                            className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium"
+                          >
+                            🔒 Add-ons available on Professional plan • Upgrade
+                          </a>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -436,6 +471,19 @@ export default function ServicesPage() {
           // Optionally refresh data or show success message
         }}
       />
+
+      {/* Service Addons Modal */}
+      {selectedServiceForAddons && (
+        <ServiceAddonsModal
+          isOpen={showAddonsModal}
+          onClose={() => {
+            setShowAddonsModal(false)
+            setSelectedServiceForAddons(null)
+          }}
+          serviceId={selectedServiceForAddons.id}
+          serviceName={selectedServiceForAddons.name}
+        />
+      )}
 
       {/* Share Modal */}
       {showShareModal && businessId && (

@@ -16,7 +16,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status })
     }
 
+    // Only get businesses that are NOT whitelabel parents
+    // (exclude businesses that have a whitelabelConfig attached)
     const businesses = await prisma.business.findMany({
+      where: {
+        whitelabelConfig: null  // Exclude whitelabel parent businesses
+      },
       include: {
         owner: {
           select: {
@@ -50,7 +55,8 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    const formattedBusinesses = businesses.map(business => {
+    // Get whitelabel associations for businesses marked as whitelabel
+    const formattedBusinesses = await Promise.all(businesses.map(async (business) => {
       const totalRevenue = business.bookings.reduce(
         (sum, booking) => sum + Number(booking.totalAmount),
         0
@@ -65,6 +71,38 @@ export async function GET(req: NextRequest) {
       const monthlyRevenue = business.bookings
         .filter(b => new Date(b.createdAt) >= monthStart)
         .reduce((sum, booking) => sum + Number(booking.totalAmount), 0)
+
+      // Find whitelabel association if business is marked as whitelabel
+      let whitelabelAssociation = null
+      if (business.isWhiteLabel) {
+        const ownerWhitelabel = await prisma.business.findFirst({
+          where: {
+            ownerId: business.ownerId,
+            whitelabelConfig: {
+              isNot: null
+            }
+          },
+          include: {
+            whitelabelConfig: {
+              select: {
+                subdomain: true,
+                brandName: true,
+                platformFeePercentage: true,
+                monthlyFee: true
+              }
+            }
+          }
+        })
+
+        if (ownerWhitelabel?.whitelabelConfig) {
+          whitelabelAssociation = {
+            subdomain: ownerWhitelabel.whitelabelConfig.subdomain,
+            brandName: ownerWhitelabel.whitelabelConfig.brandName,
+            businessId: ownerWhitelabel.id,
+            businessName: ownerWhitelabel.name
+          }
+        }
+      }
 
       return {
         id: business.id,
@@ -88,9 +126,10 @@ export async function GET(req: NextRequest) {
         totalRevenue,
         monthlyRevenue,
         platformRevenue,
-        bookingFeePercentage: Number(business.bookingFeePercentage)
+        bookingFeePercentage: Number(business.bookingFeePercentage),
+        whitelabelAssociation
       }
-    })
+    }))
 
     return NextResponse.json({
       businesses: formattedBusinesses,

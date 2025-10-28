@@ -107,6 +107,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         businessId: metadata.businessId,
         serviceId: metadata.serviceId,
         staffId: metadata.staffId,
+        addonIds: metadata.addonIds || '[]',
       }
     })
 

@@ -7,6 +7,7 @@ import { AddServiceModal } from '@/components/add-service-modal'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { WhiteLabelBranding } from '@/components/whitelabel-branding'
+import { BusinessPlanBanner } from '@/components/business-plan-banner'
 import { 
   Calendar, 
   Users, 
@@ -110,7 +111,7 @@ function BusinessDashboard() {
   const getPlanLimits = (plan: string) => {
     switch (plan) {
       case 'free': return { name: 'Free', fee: '5%' }
-      case 'starter': return { name: 'Starter', fee: '5%' }
+      case 'starter': return { name: 'Starter', fee: '4%' }
       case 'professional': return { name: 'Professional', fee: '3%' }
       case 'enterprise': return { name: 'Enterprise', fee: '2%' }
       default: return { name: 'Free', fee: '5%' }
@@ -206,6 +207,9 @@ function BusinessDashboard() {
           )}
         </div>
       </div>
+
+      {/* Platform Fee Banner - Only for Free Plan */}
+      <BusinessPlanBanner plan={businessPlan} platformFee={business?.bookingFeePercentage || 5} />
 
       {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

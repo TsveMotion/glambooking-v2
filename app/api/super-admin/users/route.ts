@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { clerkClient } from '@clerk/nextjs/server'
+import { clerkClient as getClerkClient } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { verifySuperAdmin } from '@/lib/super-admin-auth'
 
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
 
     console.log('🔵 Users API: Fetching users from Clerk...')
     // Fetch all users from Clerk
+    const clerkClient = getClerkClient()
     const clerkUsersResponse = await clerkClient.users.getUserList({ limit: 100 })
     const clerkUsers = clerkUsersResponse.data || []
     console.log('🔵 Users API: Found', clerkUsers.length, 'users from Clerk')

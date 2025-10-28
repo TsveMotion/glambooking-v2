@@ -19,54 +19,61 @@ export default function RegisterPage() {
               <span className="text-2xl font-bold glam-text-gradient">GlamBooking</span>
             </Link>
             <h1 className="mt-6 text-4xl font-bold text-glam-charcoal">
-              Start Your Free Trial
+              Start with the Free Plan
             </h1>
             <p className="mt-2 text-lg text-gray-600">
-              Join thousands of beauty professionals who trust GlamBooking
+              Perfect for solo practitioners just getting started
             </p>
+            <div className="mt-4 inline-block bg-green-50 border border-green-200 rounded-lg px-6 py-3">
+              <p className="text-3xl font-bold text-green-700">£0<span className="text-lg font-normal">/month</span></p>
+              <p className="text-sm text-green-600">Free Forever</p>
+            </div>
           </div>
 
           <div className="space-y-4">
+            <h3 className="font-semibold text-lg text-glam-charcoal">Free Plan Includes:</h3>
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
-              <span className="text-gray-700">14-day free trial, no credit card required</span>
+              <span className="text-gray-700"><strong>1 staff member only</strong></span>
             </div>
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
-              <span className="text-gray-700">Unlimited bookings and clients</span>
+              <span className="text-gray-700">Unlimited bookings</span>
             </div>
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
-              <span className="text-gray-700">Instant payments with Stripe (5% fee)</span>
+              <span className="text-gray-700">Basic analytics</span>
             </div>
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
-              <span className="text-gray-700">24/7 customer support</span>
+              <span className="text-gray-700">Email notifications</span>
             </div>
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
-              <span className="text-gray-700">Custom booking page for your business</span>
+              <span className="text-gray-700">Community support</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
+              <span className="text-gray-700">Custom booking page</span>
+            </div>
+            <div className="flex items-start space-x-3 bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <CheckCircle className="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <span className="text-gray-700 font-medium">5% platform fee + Stripe fees</span>
+                <p className="text-sm text-gray-600 mt-1">(~1.5% + 20p per transaction)</p>
+              </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-            <div className="flex items-center space-x-4">
-              <div className="flex -space-x-2">
-                <div className="w-10 h-10 bg-glam-pink rounded-full border-2 border-white flex items-center justify-center">
-                  <span className="text-white text-sm font-semibold">SJ</span>
-                </div>
-                <div className="w-10 h-10 bg-glam-gold rounded-full border-2 border-white flex items-center justify-center">
-                  <span className="text-white text-sm font-semibold">MW</span>
-                </div>
-                <div className="w-10 h-10 bg-purple-500 rounded-full border-2 border-white flex items-center justify-center">
-                  <span className="text-white text-sm font-semibold">LB</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-glam-charcoal">Join 10,000+ beauty professionals</p>
-                <p className="text-xs text-gray-500">Already using GlamBooking</p>
-              </div>
-            </div>
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100 shadow-sm">
+            <p className="text-sm font-semibold text-purple-900 mb-2">💡 Want More?</p>
+            <p className="text-sm text-gray-700 mb-3">Upgrade anytime to unlock:</p>
+            <ul className="text-xs text-gray-600 space-y-1 ml-4">
+              <li>• Multiple staff members (Starter: 5, Professional: 15)</li>
+              <li>• Service add-ons (Professional+)</li>
+              <li>• Lower platform fees (down to 2%)</li>
+              <li>• Priority support & more!</li>
+            </ul>
           </div>
         </div>
 
@@ -93,15 +100,8 @@ export default function RegisterPage() {
             signInUrl="/login"
           />
 
-          <div className="mt-6 text-center">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/checkout?plan=professional">
-                <Button size="lg" variant="glam" className="text-lg px-8 py-4 shadow-xl hover:shadow-2xl transition-all">
-                  Start Free Trial
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-            </div>
+          <div className="mt-6 text-center text-sm text-gray-600">
+            <p>Already have an account? <Link href="/login" className="text-glam-pink hover:underline font-medium">Sign in</Link></p>
           </div>
         </div>
       </div>

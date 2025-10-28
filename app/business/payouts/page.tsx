@@ -389,7 +389,7 @@ function PayoutsPage() {
                     <p className="text-sm font-medium text-gray-600">Pending Balance</p>
                     <p className="text-3xl font-bold text-gray-900">£{payoutData?.pendingBalance?.toFixed(2) || '0.00'}</p>
                     <p className="text-xs text-gray-500 mt-1">Available in 7 days</p>
-                    <p className="text-xs text-amber-600 mt-1 font-medium">Recent earnings (last 7 days)</p>
+                    <p className="text-xs text-amber-600 mt-1 font-medium">After platform fees</p>
                   </div>
                   <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center">
                     <Clock className="w-6 h-6 text-white" />
@@ -422,7 +422,7 @@ function PayoutsPage() {
                   <div>
                     <p className="text-sm font-medium text-gray-600">Platform Fees</p>
                     <p className="text-3xl font-bold text-gray-900">£{payoutData?.platformFees?.toFixed(2) || '0.00'}</p>
-                    <p className="text-xs text-gray-500 mt-1">5% of revenue (includes Stripe fees)</p>
+                    <p className="text-xs text-gray-500 mt-1">Deducted from revenue</p>
                     <p className="text-xs text-purple-600 mt-1 font-medium">
                       Staff earnings: £{payoutData?.staffEarnings?.toFixed(2) || '0.00'}
                     </p>

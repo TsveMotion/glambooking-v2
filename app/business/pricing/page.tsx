@@ -102,7 +102,7 @@ export default function PricingPage() {
       description: 'Great for small salons with multiple staff',
       popular: true,
       maxStaff: 5,
-      transactionFee: 5,
+      transactionFee: 4,
       features: [
         { text: 'Up to 5 staff members', included: true },
         { text: 'Unlimited bookings', included: true },
@@ -285,14 +285,17 @@ export default function PricingPage() {
                 <span className="text-4xl font-bold text-gray-900">£{plan.price}</span>
                 <span className="text-gray-600">/month</span>
               </div>
-              <div className="flex justify-center space-x-4 text-sm text-gray-600">
+              <div className="flex flex-col items-center space-y-2 text-sm text-gray-600">
                 <div className="flex items-center">
                   <Users className="w-4 h-4 mr-1" />
                   {plan.maxStaff === -1 ? 'Unlimited' : `Up to ${plan.maxStaff}`} staff
                 </div>
-                <div className="flex items-center">
-                  <Zap className="w-4 h-4 mr-1" />
-                  {plan.transactionFee}% fee (incl. Stripe)
+                <div className="text-center">
+                  <div className="flex items-center justify-center">
+                    <Zap className="w-4 h-4 mr-1" />
+                    <span className="font-semibold">{plan.transactionFee}% platform fee</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">+ Stripe fees (~1.5% + 20p)</p>
                 </div>
               </div>
             </CardHeader>

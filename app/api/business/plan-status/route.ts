@@ -46,12 +46,22 @@ export async function GET(req: NextRequest) {
       }
     }
     
+    // Get platform fee from business or default based on plan
+    const platformFee = business.bookingFeePercentage || {
+      'free': 5,
+      'starter': 4,
+      'professional': 3,
+      'enterprise': 2,
+      'whitelabel': 1
+    }[currentPlan] || 5
+    
     if (hasActivePlan) {
       return NextResponse.json({
         hasActivePlan: true,
         hasActiveSubscription: currentPlan !== 'free',
         plan: currentPlan,
         planName: getPlanName(currentPlan),
+        platformFee: platformFee,
         status: 'active',
         nextBillingDate: currentPlan !== 'free' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
         subscriptionId: currentPlan !== 'free' ? `sub_${business.id.slice(0, 8)}` : null

@@ -31,6 +31,17 @@ import {
   Phone,
   MapPin
 } from 'lucide-react'
+import {
+  StaffTab,
+  BookingsTab,
+  PaymentsTab,
+  ClientsTab,
+  SubscriptionsTab,
+  PayoutsTab,
+  InvitationsTab
+} from './page-tabs'
+import { BusinessDetailModal } from '@/components/business-detail-modal'
+import { WhitelabelDetailModal } from '@/components/whitelabel-detail-modal'
 
 interface WhitelabelBusiness {
   id: string
@@ -134,7 +145,24 @@ export default function SuperAdminDashboard() {
     completionRate: 0
   })
   const [searchTerm, setSearchTerm] = useState('')
-  const [activeTab, setActiveTab] = useState<'overview' | 'whitelabels' | 'users' | 'businesses' | 'activity' | 'analytics' | 'settings'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'businesses' | 'whitelabels' | 'all-businesses' | 'staff' | 'bookings' | 'payments' | 'clients' | 'subscriptions' | 'payouts' | 'invitations' | 'activity' | 'settings'>('overview')
+  
+  // Additional state for new entities
+  const [staff, setStaff] = useState<any[]>([])
+  const [bookings, setBookings] = useState<any[]>([])
+  const [payments, setPayments] = useState<any[]>([])
+  const [clients, setClients] = useState<any[]>([])
+  const [subscriptions, setSubscriptions] = useState<any[]>([])
+  const [payouts, setPayouts] = useState<any[]>([])
+  const [teamInvitations, setTeamInvitations] = useState<any[]>([])
+  const [subBusinesses, setSubBusinesses] = useState<any[]>([])
+  const [groupedBusinesses, setGroupedBusinesses] = useState<any>({})
+  
+  // Management state
+  const [selectedBusiness, setSelectedBusiness] = useState<any>(null)
+  const [selectedWhitelabel, setSelectedWhitelabel] = useState<any>(null)
+  const [showBusinessModal, setShowBusinessModal] = useState(false)
+  const [showWhitelabelModal, setShowWhitelabelModal] = useState(false)
 
   useEffect(() => {
     // CRITICAL: Check authorization immediately
@@ -167,12 +195,24 @@ export default function SuperAdminDashboard() {
     
     try {
       // Fetch all data in parallel
-      const [statsRes, usersRes, businessesRes, whitelabelsRes, activityRes] = await Promise.all([
+      const [
+        statsRes, usersRes, businessesRes, whitelabelsRes, activityRes,
+        staffRes, bookingsRes, paymentsRes, clientsRes,
+        subscriptionsRes, payoutsRes, invitationsRes, subBusinessesRes
+      ] = await Promise.all([
         fetch('/api/super-admin/stats'),
         fetch('/api/super-admin/users'),
         fetch('/api/super-admin/businesses'),
         fetch('/api/super-admin/whitelabels'),
-        fetch('/api/super-admin/activity')
+        fetch('/api/super-admin/activity'),
+        fetch('/api/super-admin/staff'),
+        fetch('/api/super-admin/bookings'),
+        fetch('/api/super-admin/payments'),
+        fetch('/api/super-admin/clients'),
+        fetch('/api/super-admin/subscriptions'),
+        fetch('/api/super-admin/payouts'),
+        fetch('/api/super-admin/team-invitations'),
+        fetch('/api/super-admin/sub-businesses')
       ])
 
       console.log('📊 Response statuses:', {
@@ -180,7 +220,14 @@ export default function SuperAdminDashboard() {
         users: usersRes.status,
         businesses: businessesRes.status,
         whitelabels: whitelabelsRes.status,
-        activity: activityRes.status
+        activity: activityRes.status,
+        staff: staffRes.status,
+        bookings: bookingsRes.status,
+        payments: paymentsRes.status,
+        clients: clientsRes.status,
+        subscriptions: subscriptionsRes.status,
+        payouts: payoutsRes.status,
+        invitations: invitationsRes.status
       })
 
       // Check authorization from first response
@@ -257,6 +304,56 @@ export default function SuperAdminDashboard() {
       } else {
         const error = await activityRes.text()
         console.error('❌ Activity error:', error)
+      }
+
+      // Parse new entity responses
+      if (staffRes.ok) {
+        const data = await staffRes.json()
+        setStaff(data.staff || [])
+        console.log('✅ Staff:', data.staff?.length || 0)
+      }
+
+      if (bookingsRes.ok) {
+        const data = await bookingsRes.json()
+        setBookings(data.bookings || [])
+        console.log('✅ Bookings:', data.bookings?.length || 0)
+      }
+
+      if (paymentsRes.ok) {
+        const data = await paymentsRes.json()
+        setPayments(data.payments || [])
+        console.log('✅ Payments:', data.payments?.length || 0)
+      }
+
+      if (clientsRes.ok) {
+        const data = await clientsRes.json()
+        setClients(data.clients || [])
+        console.log('✅ Clients:', data.clients?.length || 0)
+      }
+
+      if (subscriptionsRes.ok) {
+        const data = await subscriptionsRes.json()
+        setSubscriptions(data.subscriptions || [])
+        console.log('✅ Subscriptions:', data.subscriptions?.length || 0)
+      }
+
+      if (payoutsRes.ok) {
+        const data = await payoutsRes.json()
+        setPayouts(data.payouts || [])
+        console.log('✅ Payouts:', data.payouts?.length || 0)
+      }
+
+      if (invitationsRes.ok) {
+        const data = await invitationsRes.json()
+        setTeamInvitations(data.invitations || [])
+        console.log('✅ Team Invitations:', data.invitations?.length || 0)
+      }
+
+      if (subBusinessesRes.ok) {
+        const data = await subBusinessesRes.json()
+        setSubBusinesses(data.businesses || [])
+        setGroupedBusinesses(data.groupedByWhitelabel || {})
+        console.log('✅ Sub-businesses:', data.businesses?.length || 0)
       }
 
       setAuthorized(true)
@@ -395,6 +492,110 @@ export default function SuperAdminDashboard() {
           </button>
           
           <button
+            onClick={() => setActiveTab('all-businesses')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'all-businesses'
+                ? 'bg-purple-50 text-purple-700'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <Building2 className="w-5 h-5" />
+            <span className="flex-1 text-left">All Businesses</span>
+            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">{subBusinesses.length}</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('staff')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'staff'
+                ? 'bg-purple-50 text-purple-700'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <UserCircle className="w-5 h-5" />
+            <span className="flex-1 text-left">Staff</span>
+            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">{staff.length}</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('bookings')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'bookings'
+                ? 'bg-purple-50 text-purple-700'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <Calendar className="w-5 h-5" />
+            <span className="flex-1 text-left">Bookings</span>
+            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">{bookings.length}</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('payments')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'payments'
+                ? 'bg-purple-50 text-purple-700'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <DollarSign className="w-5 h-5" />
+            <span className="flex-1 text-left">Payments</span>
+            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">{payments.length}</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('clients')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'clients'
+                ? 'bg-purple-50 text-purple-700'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            <span className="flex-1 text-left">Clients</span>
+            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">{clients.length}</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('subscriptions')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'subscriptions'
+                ? 'bg-purple-50 text-purple-700'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <TrendingUp className="w-5 h-5" />
+            <span className="flex-1 text-left">Subscriptions</span>
+            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">{subscriptions.length}</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('payouts')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'payouts'
+                ? 'bg-purple-50 text-purple-700'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <DollarSign className="w-5 h-5" />
+            <span className="flex-1 text-left">Payouts</span>
+            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">{payouts.length}</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('invitations')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'invitations'
+                ? 'bg-purple-50 text-purple-700'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <Mail className="w-5 h-5" />
+            <span className="flex-1 text-left">Invitations</span>
+            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">{teamInvitations.length}</span>
+          </button>
+          
+          <button
             onClick={() => setActiveTab('activity')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
               activeTab === 'activity'
@@ -404,6 +605,18 @@ export default function SuperAdminDashboard() {
           >
             <Activity className="w-5 h-5" />
             Activity Feed
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'settings'
+                ? 'bg-purple-50 text-purple-700'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+            Settings
           </button>
         </nav>
 
@@ -436,14 +649,32 @@ export default function SuperAdminDashboard() {
               {activeTab === 'users' && 'User Management'}
               {activeTab === 'businesses' && 'Business Management'}
               {activeTab === 'whitelabels' && 'White-Label Management'}
+              {activeTab === 'all-businesses' && 'All Businesses Management'}
+              {activeTab === 'staff' && 'Staff Management'}
+              {activeTab === 'bookings' && 'Bookings Management'}
+              {activeTab === 'payments' && 'Payments Management'}
+              {activeTab === 'clients' && 'Clients Management'}
+              {activeTab === 'subscriptions' && 'Subscriptions Management'}
+              {activeTab === 'payouts' && 'Payouts Management'}
+              {activeTab === 'invitations' && 'Team Invitations'}
               {activeTab === 'activity' && 'Activity Feed'}
+              {activeTab === 'settings' && 'Platform Settings'}
             </h2>
             <p className="text-sm text-gray-600 mt-1">
               {activeTab === 'overview' && 'Monitor platform health and key metrics'}
               {activeTab === 'users' && 'View and manage all registered users'}
               {activeTab === 'businesses' && 'Manage all businesses on the platform'}
               {activeTab === 'whitelabels' && 'Control white-label partner businesses'}
+              {activeTab === 'all-businesses' && 'View all businesses with whitelabel associations'}
+              {activeTab === 'staff' && 'View all staff members across businesses'}
+              {activeTab === 'bookings' && 'Monitor all bookings and appointments'}
+              {activeTab === 'payments' && 'Track all payments and transactions'}
+              {activeTab === 'clients' && 'View all clients across businesses'}
+              {activeTab === 'subscriptions' && 'Manage business subscriptions'}
+              {activeTab === 'payouts' && 'Monitor payouts to businesses'}
+              {activeTab === 'invitations' && 'View pending and accepted team invitations'}
               {activeTab === 'activity' && 'Recent platform activity and events'}
+              {activeTab === 'settings' && 'Configure global platform settings'}
             </p>
           </div>
           <Button onClick={fetchData} variant="outline">
@@ -455,7 +686,10 @@ export default function SuperAdminDashboard() {
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-8">
           {/* Search Bar for list views */}
-          {(activeTab === 'users' || activeTab === 'businesses' || activeTab === 'whitelabels') && (
+          {(activeTab === 'users' || activeTab === 'businesses' || activeTab === 'whitelabels' || activeTab === 'all-businesses' ||
+            activeTab === 'staff' || activeTab === 'bookings' || 
+            activeTab === 'payments' || activeTab === 'clients' || activeTab === 'subscriptions' || 
+            activeTab === 'payouts' || activeTab === 'invitations') && (
             <div className="mb-6">
               <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -571,9 +805,104 @@ export default function SuperAdminDashboard() {
                     <div>
                       <p className="text-sm font-medium text-gray-600">Completion Rate</p>
                       <p className="text-3xl font-bold text-gray-900 mt-1">{stats.completionRate.toFixed(1)}%</p>
-                      <p className="text-xs text-gray-500 mt-1">Success rate</p>
+                      <p className="text-xs text-gray-500 mt-1">Successful bookings</p>
                     </div>
-                    <CheckCircle className="w-10 h-10 text-emerald-600" />
+                    <CheckCircle className="w-10 h-10 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Additional Entity Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Staff</p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">{staff.length}</p>
+                      <p className="text-xs text-gray-500 mt-1">Across all businesses</p>
+                    </div>
+                    <UserCircle className="w-10 h-10 text-cyan-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Payments</p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">{payments.length}</p>
+                      <p className="text-xs text-gray-500 mt-1">Transactions processed</p>
+                    </div>
+                    <DollarSign className="w-10 h-10 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Clients</p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">{clients.length}</p>
+                      <p className="text-xs text-gray-500 mt-1">Registered clients</p>
+                    </div>
+                    <Users className="w-10 h-10 text-indigo-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Subscriptions</p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">{subscriptions.length}</p>
+                      <p className="text-xs text-gray-500 mt-1">Active subscriptions</p>
+                    </div>
+                    <TrendingUp className="w-10 h-10 text-purple-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Payouts</p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">{payouts.length}</p>
+                      <p className="text-xs text-gray-500 mt-1">Total payouts made</p>
+                    </div>
+                    <DollarSign className="w-10 h-10 text-teal-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Team Invitations</p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">{teamInvitations.length}</p>
+                      <p className="text-xs text-gray-500 mt-1">Pending & accepted</p>
+                    </div>
+                    <Mail className="w-10 h-10 text-amber-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">All Bookings</p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">{bookings.length}</p>
+                      <p className="text-xs text-gray-500 mt-1">Recent bookings</p>
+                    </div>
+                    <Calendar className="w-10 h-10 text-rose-600" />
                   </div>
                 </CardContent>
               </Card>
@@ -594,10 +923,6 @@ export default function SuperAdminDashboard() {
                   <Button className="w-full" variant="outline" onClick={() => setActiveTab('whitelabels')}>
                     <Building2 className="w-4 h-4 mr-2" />
                     View All Businesses
-                  </Button>
-                  <Button className="w-full" variant="outline" onClick={() => setActiveTab('analytics')}>
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    Platform Analytics
                   </Button>
                 </div>
               </CardContent>
@@ -702,7 +1027,14 @@ export default function SuperAdminDashboard() {
         {activeTab === 'businesses' && (
           <div className="grid grid-cols-1 gap-4">
             {filteredBusinesses.map((business) => (
-              <Card key={business.id}>
+              <Card 
+                key={business.id}
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => {
+                  setSelectedBusiness(business)
+                  setShowBusinessModal(true)
+                }}
+              >
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4 flex-1">
@@ -736,6 +1068,17 @@ export default function SuperAdminDashboard() {
                             </span>
                           )}
                         </div>
+                        
+                        {/* Whitelabel Association */}
+                        {(business as any).whitelabelAssociation && (
+                          <div className="mb-3 p-2 bg-pink-50 border border-pink-200 rounded-lg">
+                            <p className="text-xs text-pink-700">
+                              <Crown className="w-3 h-3 inline mr-1" />
+                              <strong>Whitelabel:</strong> {(business as any).whitelabelAssociation.brandName} ({(business as any).whitelabelAssociation.subdomain})
+                            </p>
+                          </div>
+                        )}
+                        
                         <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                           {business.email && (
                             <span className="flex items-center gap-1">
@@ -776,6 +1119,113 @@ export default function SuperAdminDashboard() {
               </Card>
             ))}
             {filteredBusinesses.length === 0 && (
+              <div className="text-center py-12">
+                <Building2 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600">No businesses found</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* All Businesses Tab - Grouped by Whitelabel */}
+        {activeTab === 'all-businesses' && (
+          <div className="space-y-6">
+            {Object.entries(groupedBusinesses).map(([key, group]: [string, any]) => (
+              <div key={key}>
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-purple-900">
+                        {group.whitelabel ? (
+                          <>
+                            <Crown className="w-5 h-5 inline mr-2" />
+                            {group.whitelabel.brandName} ({group.whitelabel.subdomain})
+                          </>
+                        ) : (
+                          <>
+                            <Building2 className="w-5 h-5 inline mr-2" />
+                            Direct Businesses
+                          </>
+                        )}
+                      </h3>
+                      <p className="text-sm text-purple-700 mt-1">
+                        {group.count} businesses • £{group.totalRevenue.toFixed(2)} total revenue • £{group.totalPlatformRevenue.toFixed(2)} platform revenue
+                      </p>
+                    </div>
+                    {group.whitelabel && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const whitelabel = whitelabelBusinesses.find(w => w.subdomain === group.whitelabel.subdomain)
+                          if (whitelabel) {
+                            setSelectedWhitelabel(whitelabel)
+                            setShowWhitelabelModal(true)
+                          }
+                        }}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        View Whitelabel
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {group.businesses.map((business: any) => (
+                    <Card 
+                      key={business.id} 
+                      className="cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => {
+                        setSelectedBusiness(business)
+                        setShowBusinessModal(true)
+                      }}
+                    >
+                      <CardContent className="pt-6">
+                        <div className="flex items-start gap-3">
+                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                            business.isActive ? 'bg-gradient-to-r from-purple-600 to-pink-600' : 'bg-gray-300'
+                          }`}>
+                            <Building2 className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate">{business.name}</h3>
+                            <p className="text-xs text-gray-500">{business.owner?.email}</p>
+                            
+                            <div className="flex gap-1 flex-wrap mt-2">
+                              {business.isActive ? (
+                                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                              ) : (
+                                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">Inactive</span>
+                              )}
+                              {business.isWhiteLabel && (
+                                <span className="px-2 py-0.5 bg-pink-100 text-pink-700 text-xs rounded-full">WL</span>
+                              )}
+                              {business.stripeOnboarded && (
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">Stripe</span>
+                              )}
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                              <div>
+                                <span className="text-gray-600">Bookings:</span>
+                                <strong className="ml-1">{business.bookingCount}</strong>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Revenue:</span>
+                                <strong className="ml-1 text-green-600">£{business.totalRevenue?.toFixed(0) || 0}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))}
+            
+            {Object.keys(groupedBusinesses).length === 0 && (
               <div className="text-center py-12">
                 <Building2 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
                 <p className="text-gray-600">No businesses found</p>
@@ -847,7 +1297,14 @@ export default function SuperAdminDashboard() {
             {/* Whitelabel Businesses List */}
             <div className="grid grid-cols-1 gap-4">
               {filteredWhitelabels.map((business) => (
-                <Card key={business.id} className="hover:shadow-lg transition-shadow">
+                <Card 
+                  key={business.id} 
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => {
+                    setSelectedWhitelabel(business)
+                    setShowWhitelabelModal(true)
+                  }}
+                >
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4 flex-1">
@@ -930,25 +1387,41 @@ export default function SuperAdminDashboard() {
           </div>
         )}
 
-        {/* Analytics Tab */}
-        {activeTab === 'analytics' && (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Platform Analytics</CardTitle>
-                <CardDescription>Detailed insights across all whitelabel businesses</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-96 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
-                  <div className="text-center text-gray-500">
-                    <BarChart3 className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                    <p className="text-lg font-medium">Advanced Analytics Coming Soon</p>
-                    <p className="text-sm">Charts and detailed metrics will appear here</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+
+        {/* Staff Tab */}
+        {activeTab === 'staff' && (
+          <StaffTab staff={staff} searchTerm={searchTerm} />
+        )}
+
+
+        {/* Bookings Tab */}
+        {activeTab === 'bookings' && (
+          <BookingsTab bookings={bookings} searchTerm={searchTerm} />
+        )}
+
+        {/* Payments Tab */}
+        {activeTab === 'payments' && (
+          <PaymentsTab payments={payments} searchTerm={searchTerm} />
+        )}
+
+        {/* Clients Tab */}
+        {activeTab === 'clients' && (
+          <ClientsTab clients={clients} searchTerm={searchTerm} />
+        )}
+
+        {/* Subscriptions Tab */}
+        {activeTab === 'subscriptions' && (
+          <SubscriptionsTab subscriptions={subscriptions} searchTerm={searchTerm} />
+        )}
+
+        {/* Payouts Tab */}
+        {activeTab === 'payouts' && (
+          <PayoutsTab payouts={payouts} searchTerm={searchTerm} />
+        )}
+
+        {/* Team Invitations Tab */}
+        {activeTab === 'invitations' && (
+          <InvitationsTab invitations={teamInvitations} searchTerm={searchTerm} />
         )}
 
         {/* Settings Tab */}
@@ -985,6 +1458,84 @@ export default function SuperAdminDashboard() {
         )}
         </div>
       </div>
+
+      {/* Business Detail Modal */}
+      {showBusinessModal && selectedBusiness && (
+        <BusinessDetailModal
+          business={selectedBusiness}
+          onClose={() => {
+            setShowBusinessModal(false)
+            setSelectedBusiness(null)
+          }}
+          onUpdate={async (businessId, updates) => {
+            const response = await fetch(`/api/super-admin/businesses/${businessId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updates)
+            })
+            if (response.ok) {
+              await fetchData()
+            }
+          }}
+          onDelete={async (businessId) => {
+            const response = await fetch(`/api/super-admin/businesses/${businessId}`, {
+              method: 'DELETE'
+            })
+            if (response.ok) {
+              await fetchData()
+            }
+          }}
+          onToggleActive={async (businessId, isActive) => {
+            const response = await fetch(`/api/super-admin/businesses/${businessId}/toggle-active`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ isActive })
+            })
+            if (response.ok) {
+              await fetchData()
+            }
+          }}
+        />
+      )}
+
+      {/* Whitelabel Detail Modal */}
+      {showWhitelabelModal && selectedWhitelabel && (
+        <WhitelabelDetailModal
+          whitelabel={selectedWhitelabel}
+          onClose={() => {
+            setShowWhitelabelModal(false)
+            setSelectedWhitelabel(null)
+          }}
+          onUpdate={async (whitelabelId, updates) => {
+            const response = await fetch(`/api/super-admin/whitelabels/${whitelabelId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updates)
+            })
+            if (response.ok) {
+              await fetchData()
+            }
+          }}
+          onDelete={async (whitelabelId) => {
+            const response = await fetch(`/api/super-admin/whitelabels/${whitelabelId}`, {
+              method: 'DELETE'
+            })
+            if (response.ok) {
+              await fetchData()
+            }
+          }}
+          onToggleActive={async (whitelabelId, isActive) => {
+            const response = await fetch(`/api/super-admin/whitelabels/${whitelabelId}/toggle-active`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ isActive })
+            })
+            if (response.ok) {
+              await fetchData()
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

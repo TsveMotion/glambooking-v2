@@ -102,8 +102,24 @@ model Service {
   bookings      Booking[]
   business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   staffServices StaffService[]
+  addons        ServiceAddon[]
 
   @@map("services")
+}
+
+model ServiceAddon {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  duration    Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@map("service_addons")
 }
 
 model StaffService {
@@ -133,6 +149,7 @@ model Booking {
   businessId       String
   staffId          String
   serviceId        String
+  addonIds         String?       @default("[]")
   completedAt      DateTime?
   completedBy      String?
   fundsAvailableAt DateTime?

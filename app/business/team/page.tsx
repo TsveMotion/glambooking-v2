@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { BusinessPlanBanner } from '@/components/business-plan-banner'
 import { 
   Users, 
   Plus,
@@ -51,6 +52,7 @@ interface Business {
   id: string
   name: string
   plan: 'free' | 'starter' | 'professional' | 'enterprise'
+  bookingFeePercentage: number
   teamMembers: TeamMember[]
   pendingInvitations: PendingInvitation[]
 }
@@ -101,11 +103,11 @@ export default function TeamPage() {
 
   const getPlanLimits = (plan: string) => {
     switch (plan) {
-      case 'free': return { maxTeam: 1, name: 'Free', fee: '10%' }
-      case 'starter': return { maxTeam: 5, name: 'Starter', fee: '5%' }
+      case 'free': return { maxTeam: 1, name: 'Free', fee: '5%' }
+      case 'starter': return { maxTeam: 5, name: 'Starter', fee: '4%' }
       case 'professional': return { maxTeam: 15, name: 'Professional', fee: '3%' }
       case 'enterprise': return { maxTeam: -1, name: 'Enterprise', fee: '2%' }
-      default: return { maxTeam: 1, name: 'Free', fee: '10%' }
+      default: return { maxTeam: 1, name: 'Free', fee: '5%' }
     }
   }
 
@@ -251,6 +253,9 @@ export default function TeamPage() {
 
   return (
     <div className="p-6">
+      {/* Platform Fee Banner - Only for Free Plan */}
+      <BusinessPlanBanner plan={business?.plan || 'free'} platformFee={business?.bookingFeePercentage || 5} />
+
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -258,16 +263,6 @@ export default function TeamPage() {
           <p className="text-gray-600">
             Manage your team members and their access ({currentTeamSize}/{planLimits.maxTeam === -1 ? '∞' : planLimits.maxTeam} members)
           </p>
-          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Transaction Fee: {planLimits.fee} per booking</strong>
-              {business?.plan === 'free' && (
-                <span className="block text-blue-600 mt-1">
-                  Upgrade to reduce your booking fees and unlock more features
-                </span>
-              )}
-            </p>
-          </div>
         </div>
         <Button 
           onClick={() => setShowAddModal(true)}

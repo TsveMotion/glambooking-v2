@@ -16,7 +16,9 @@ export async function POST(req: NextRequest) {
       date, 
       time, 
       clientInfo, 
-      totalAmount 
+      totalAmount,
+      totalDuration,
+      addonIds 
     } = body
 
     if (!businessId || !serviceId || !staffId || !date || !time || !clientInfo || !totalAmount) {
@@ -70,9 +72,10 @@ export async function POST(req: NextRequest) {
       }, { status: 404 })
     }
 
-    // Create booking date/time
+    // Create booking date/time with total duration including addons
+    const duration = totalDuration || service.duration
     const startTime = new Date(`${date}T${time}:00`)
-    const endTime = new Date(startTime.getTime() + service.duration * 60000)
+    const endTime = new Date(startTime.getTime() + duration * 60000)
 
     // Check for conflicts
     const existingBooking = await prisma.booking.findFirst({
@@ -107,6 +110,18 @@ export async function POST(req: NextRequest) {
     const platformFee = Math.round(totalAmountPence * platformFeeRate)
     const businessAmount = totalAmountPence - platformFee
 
+    // Fetch addon details if provided
+    let addonsDescription = ''
+    if (addonIds && addonIds.length > 0) {
+      const addons = await prisma.serviceAddon.findMany({
+        where: {
+          id: { in: addonIds },
+          serviceId: serviceId
+        }
+      })
+      addonsDescription = addons.length > 0 ? ` + ${addons.map(a => a.name).join(', ')}` : ''
+    }
+
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -115,8 +130,8 @@ export async function POST(req: NextRequest) {
           price_data: {
             currency: 'gbp',
             product_data: {
-              name: service.name,
-              description: `${service.duration} minutes with ${staff.firstName} ${staff.lastName}`,
+              name: service.name + addonsDescription,
+              description: `${duration} minutes with ${staff.firstName} ${staff.lastName}`,
             },
             unit_amount: totalAmountPence,
           },
@@ -136,7 +151,8 @@ export async function POST(req: NextRequest) {
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         platformFee: platformFee.toString(),
-        businessAmount: businessAmount.toString()
+        businessAmount: businessAmount.toString(),
+        addonIds: addonIds ? JSON.stringify(addonIds) : '[]'
       }
     })
 

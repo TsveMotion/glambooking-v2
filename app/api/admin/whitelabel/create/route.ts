@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { auth, clerkClient as getClerkClient } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { createStripeCustomer, createWhiteLabelSubscription } from '@/lib/stripe-whitelabel'
 import { sendEmail } from '@/lib/brevo-email'
+import { verifySuperAdmin } from '@/lib/super-admin-auth'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = auth()
+    // Verify super admin authorization
+    const authResult = await verifySuperAdmin()
     
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!authResult.authorized) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status })
     }
-
-    // TODO: Add admin role check
     
     const body = await req.json()
     const {

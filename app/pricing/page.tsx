@@ -27,7 +27,7 @@ export default function PricingPage() {
         'Email notifications',
         'Community support',
         'Custom booking page',
-        '5% booking fee (includes Stripe fees)'
+        '5% platform fee + Stripe fees (~1.5% + 20p)'
       ],
       popular: false,
       icon: Users,
@@ -47,7 +47,7 @@ export default function PricingPage() {
         'Priority support',
         'Custom booking page',
         'Basic branding',
-        '5% booking fee (includes Stripe fees)'
+        '4% platform fee + Stripe fees (~1.5% + 20p)'
       ],
       popular: true,
       icon: Zap,
@@ -68,7 +68,7 @@ export default function PricingPage() {
         'Full custom branding',
         'Marketing tools',
         'Multi-location support',
-        '3% booking fee (includes Stripe fees)'
+        '3% platform fee + Stripe fees (~1.5% + 20p)'
       ],
       popular: false,
       icon: Crown,
@@ -91,7 +91,7 @@ export default function PricingPage() {
         'Multi-location support',
         'API access',
         'Custom integrations',
-        '2% booking fee (includes Stripe fees)'
+        '2% platform fee + Stripe fees (~1.5% + 20p)'
       ],
       popular: false,
       icon: Building,
@@ -241,9 +241,11 @@ export default function PricingPage() {
                 How do the booking fees work?
               </h3>
               <p className="text-gray-600">
-                We charge simple, transparent booking fees based on your plan: Free (5%), Starter (5%), Professional (3%), 
-                and Enterprise (2%). This fee includes all Stripe payment processing costs (~1.5%), so customers pay the service price only with no extra charges. 
-                The remaining amount is automatically transferred to your connected bank account.
+                We charge simple, transparent platform fees based on your plan: Free (5%), Starter (4%), Professional (3%), 
+                and Enterprise (2%). Stripe payment processing fees (~1.5% + 20p per transaction) are additional and deducted separately. 
+                For example, on a £100 booking with the Free plan, you receive £93.30 (£100 - £5 platform fee - £1.70 Stripe fees). 
+                On the Starter plan, you'd receive £94.30 (£100 - £4 platform fee - £1.70 Stripe fees). 
+                Customers always pay the exact service price with no extra charges.
               </p>
             </div>
             
@@ -263,7 +265,7 @@ export default function PricingPage() {
               </h3>
               <p className="text-gray-600">
                 No setup fees, ever. We believe in transparent pricing with no hidden costs. 
-                You only pay your monthly subscription (if applicable) and the booking fee on successful transactions.
+                You only pay your monthly subscription (if applicable), the platform fee, and Stripe processing fees on completed bookings.
               </p>
             </div>
             
