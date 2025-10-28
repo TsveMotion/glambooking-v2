@@ -66,56 +66,76 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Business not found' }, { status: 404 })
     }
 
-    const now = new Date()
+    const business = user.businesses[0]
 
-    // Calculate when funds will be available (immediately for now, can add delay if needed)
-    const fundsAvailableAt = new Date()
-
-    // Update booking status to completed
-    await prisma.booking.update({
-      where: { id: params.id },
-      data: { status: 'COMPLETED', completedAt: now }
+    // Fetch the staff member and upcoming bookings
+    const staffMember = await prisma.staff.findFirst({
+      where: {
+        id: params.id,
+        businessId: business.id
+      },
+      include: {
+        bookings: {
+          where: {
+            startTime: {
+              gte: new Date()
+            },
+            status: {
+              in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS']
+            }
+          },
+          select: { id: true }
+        }
+      }
     })
 
-    return NextResponse.json({ success: true, message: 'Booking marked as completed' })
-      // Instead of deleting, deactivate the staff member and update bookings
+    if (!staffMember) {
+      return NextResponse.json({ error: 'Staff member not found' }, { status: 404 })
+    }
+
+    const hasUpcomingBookings = staffMember.bookings.length > 0
+
+    if (hasUpcomingBookings) {
       await prisma.$transaction([
-        // Deactivate the staff member
         prisma.staff.update({
-          where: { id: params.id },
-          data: { 
+          where: { id: staffMember.id },
+          data: {
             isActive: false,
-            firstName: `[REMOVED] ${member.firstName}`,
-            lastName: member.lastName,
-            email: `removed_${Date.now()}@${member.email}`
+            email: null,
+            firstName: `[REMOVED] ${staffMember.firstName}`,
+            lastName: staffMember.lastName
           }
         }),
-        // Update all bookings to remove staff association (set to null or business owner)
         prisma.booking.updateMany({
-          where: { staffId: params.id },
-          data: { staffId: null }
+          where: {
+            staffId: staffMember.id,
+            startTime: {
+              gte: new Date()
+            }
+          },
+          data: {
+            staffId: null,
+            status: 'PENDING'
+          }
         })
       ])
-      
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Staff member deactivated and removed from future bookings. Past bookings preserved for records.' 
-      })
-    } else {
-      // No bookings, safe to delete
-      await prisma.staff.delete({
-        where: {
-          id: params.id
-        }
-      })
-      
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Staff member deleted successfully.' 
+
+      return NextResponse.json({
+        success: true,
+        message: 'Staff member deactivated and removed from upcoming bookings. Past bookings preserved for records.'
       })
     }
 
-    return NextResponse.json({ success: true })
+    await prisma.staff.delete({
+      where: {
+        id: staffMember.id
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Staff member deleted successfully.'
+    })
   } catch (error) {
     console.error('Delete team member error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
