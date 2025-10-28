@@ -111,6 +111,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     })
 
     // Create payment record
+    // Platform fee is 5% which includes covering Stripe transaction fees
     await prisma.payment.create({
       data: {
         amount: session.amount_total! / 100,

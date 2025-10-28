@@ -100,11 +100,12 @@ export async function POST(req: NextRequest) {
     })
 
     // Create payment record
+    // Platform fee is 5% which includes covering Stripe transaction fees
     await prisma.payment.create({
       data: {
         bookingId: booking.id,
         amount: service.price,
-        platformFee: Number(service.price) * 0.05, // 5% platform fee
+        platformFee: Number(service.price) * 0.05, // 5% platform fee (includes Stripe fees)
         businessAmount: Number(service.price) * 0.95, // 95% to business
         currency: 'GBP',
         status: 'COMPLETED',

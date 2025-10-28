@@ -2,12 +2,12 @@
 export const PLAN_LIMITS = {
   free: {
     maxStaff: 1,
-    bookingFeePercentage: 10.0,
+    bookingFeePercentage: 5.0, // 5% includes Stripe transaction fees
     features: ['Basic analytics', 'Email notifications', 'Community support']
   },
   starter: {
     maxStaff: 5,
-    bookingFeePercentage: 5.0,
+    bookingFeePercentage: 5.0, // 5% includes Stripe transaction fees
     features: ['Advanced analytics', 'Email notifications', 'Priority support', 'Basic branding']
   },
   professional: {
@@ -44,7 +44,7 @@ export function getStaffLimit(plan: string): number {
 // Get booking fee percentage for a plan
 export function getBookingFeePercentage(plan: string): number {
   const planLimits = PLAN_LIMITS[plan as PlanType]
-  return planLimits?.bookingFeePercentage || 10.0
+  return planLimits?.bookingFeePercentage || 5.0 // Default to 5% if plan not found
 }
 
 // Update business plan limits when plan changes

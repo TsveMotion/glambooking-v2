@@ -30,10 +30,14 @@ export async function POST(req: NextRequest) {
       where: { id: serviceId },
       include: {
         business: {
+          include: {
+            whitelabelConfig: true
+          },
           select: {
             id: true,
             name: true,
-            stripeAccountId: true
+            stripeAccountId: true,
+            isWhiteLabel: true
           }
         }
       }
@@ -47,9 +51,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Business Stripe account not connected' }, { status: 400 })
     }
 
-    // Calculate fees
+    // Calculate fees - customer pays service price only
+    // For white-label: Platform takes 1% (white-label absorbs rest)
+    // For standard: Platform takes 5% (includes Stripe fees)
     const serviceAmount = parseFloat(service.price.toString())
-    const platformFeeRate = 0.05 // 5% platform fee
+    const isWhiteLabel = service.business.isWhiteLabel
+    const platformFeeRate = isWhiteLabel 
+      ? (parseFloat(service.business.whitelabelConfig?.platformFeePercentage?.toString() || '1.0') / 100)
+      : 0.05 // 5% for standard, 1% default for white-label
     const platformFee = serviceAmount * platformFeeRate
     const businessAmount = serviceAmount - platformFee
 

@@ -91,6 +91,9 @@ export async function GET(req: NextRequest) {
     const weekEnd = new Date(weekStart)
     weekEnd.setDate(weekStart.getDate() + 7)
 
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1)
+
     // Get today's bookings
     const todayBookings = await prisma.booking.count({
       where: {
@@ -143,6 +146,20 @@ export async function GET(req: NextRequest) {
       }
     })
 
+    const monthlyRevenue = await prisma.booking.aggregate({
+      where: {
+        businessId: business.id,
+        startTime: {
+          gte: monthStart,
+          lt: nextMonth
+        },
+        status: 'COMPLETED'
+      },
+      _sum: {
+        totalAmount: true
+      }
+    })
+
     // Get upcoming bookings
     const upcomingBookings = await prisma.booking.findMany({
       where: {
@@ -186,7 +203,8 @@ export async function GET(req: NextRequest) {
         todayBookings,
         todayRevenue: todayRevenue._sum.totalAmount || 0,
         weeklyBookings,
-        weeklyRevenue: weeklyRevenue._sum.totalAmount || 0
+        weeklyRevenue: weeklyRevenue._sum.totalAmount || 0,
+        monthlyRevenue: monthlyRevenue._sum.totalAmount || 0
       },
       upcomingBookings: upcomingBookings.map(booking => ({
         id: booking.id,

@@ -426,3 +426,53 @@ export class BrevoEmailService {
 }
 
 export const brevoEmailService = new BrevoEmailService()
+
+// Generic send email function
+interface SendEmailParams {
+  to: string
+  subject: string
+  html: string
+  name?: string
+}
+
+export async function sendEmail(params: SendEmailParams): Promise<boolean> {
+  try {
+    const emailPayload = {
+      sender: {
+        name: 'GlamBooking',
+        email: 'noreply@glambooking.co.uk'
+      },
+      to: [{
+        email: params.to,
+        name: params.name || params.to
+      }],
+      subject: params.subject,
+      htmlContent: params.html
+    }
+
+    console.log('Sending email via Brevo API to:', params.to)
+    
+    const response = await fetch(`${BREVO_API_URL}/smtp/email`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': BREVO_API_KEY
+      },
+      body: JSON.stringify(emailPayload)
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      console.log('Email sent successfully via Brevo:', result.messageId)
+      return true
+    } else {
+      const error = await response.text()
+      console.error('Failed to send email via Brevo:', error)
+      return false
+    }
+  } catch (error) {
+    console.error('Failed to send email via Brevo:', error)
+    return false
+  }
+}

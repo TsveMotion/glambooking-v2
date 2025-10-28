@@ -27,7 +27,7 @@ export default function PricingPage() {
         'Email notifications',
         'Community support',
         'Custom booking page',
-        '10% booking fee'
+        '5% booking fee (includes Stripe fees)'
       ],
       popular: false,
       icon: Users,
@@ -47,7 +47,7 @@ export default function PricingPage() {
         'Priority support',
         'Custom booking page',
         'Basic branding',
-        '5% booking fee'
+        '5% booking fee (includes Stripe fees)'
       ],
       popular: true,
       icon: Zap,
@@ -68,7 +68,7 @@ export default function PricingPage() {
         'Full custom branding',
         'Marketing tools',
         'Multi-location support',
-        '3% booking fee'
+        '3% booking fee (includes Stripe fees)'
       ],
       popular: false,
       icon: Crown,
@@ -91,7 +91,7 @@ export default function PricingPage() {
         'Multi-location support',
         'API access',
         'Custom integrations',
-        '2% booking fee'
+        '2% booking fee (includes Stripe fees)'
       ],
       popular: false,
       icon: Building,
@@ -241,8 +241,8 @@ export default function PricingPage() {
                 How do the booking fees work?
               </h3>
               <p className="text-gray-600">
-                We charge different booking fees based on your plan: Free (10%), Starter (5%), Professional (3%), 
-                and Enterprise (2%). This covers payment processing, platform maintenance, and support. 
+                We charge simple, transparent booking fees based on your plan: Free (5%), Starter (5%), Professional (3%), 
+                and Enterprise (2%). This fee includes all Stripe payment processing costs (~1.5%), so customers pay the service price only with no extra charges. 
                 The remaining amount is automatically transferred to your connected bank account.
               </p>
             </div>

@@ -81,7 +81,7 @@ export default function PricingPage() {
       price: 0,
       description: 'Perfect for solo practitioners just getting started',
       maxStaff: 1,
-      transactionFee: 10,
+      transactionFee: 5,
       features: [
         { text: '1 staff member only', included: true },
         { text: 'Unlimited bookings', included: true },
@@ -292,7 +292,7 @@ export default function PricingPage() {
                 </div>
                 <div className="flex items-center">
                   <Zap className="w-4 h-4 mr-1" />
-                  {plan.transactionFee}% fee
+                  {plan.transactionFee}% fee (incl. Stripe)
                 </div>
               </div>
             </CardHeader>

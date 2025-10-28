@@ -52,7 +52,8 @@ import {
   CheckCircle,
   Warning,
   Error as ErrorIcon,
-  Info
+  Info,
+  Label as LabelIcon
 } from '@mui/icons-material'
 import {
   LineChart,
@@ -195,6 +196,7 @@ const adminTheme = createTheme({
 
 // Premium Admin Dashboard Component
 function PremiumAdminDashboard() {
+  const router = useRouter()
   const [stats, setStats] = useState<any>(null)
   const [activity, setActivity] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
@@ -256,6 +258,7 @@ function PremiumAdminDashboard() {
     { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
     { id: 'users', label: 'Users', icon: <PeopleIcon /> },
     { id: 'businesses', label: 'Businesses', icon: <BusinessIcon /> },
+    { id: 'whitelabel', label: 'White-Label', icon: <LabelIcon />, isExternal: true },
     { id: 'activity', label: 'Activity', icon: <TimelineIcon /> },
     { id: 'analytics', label: 'Analytics', icon: <Analytics /> },
     { id: 'settings', label: 'Settings', icon: <Settings /> },
@@ -1222,7 +1225,13 @@ function PremiumAdminDashboard() {
             <ListItemButton
               key={item.id}
               selected={selectedTab === item.id}
-              onClick={() => setSelectedTab(item.id)}
+              onClick={() => {
+                if (item.isExternal) {
+                  router.push('/admin/whitelabel')
+                } else {
+                  setSelectedTab(item.id)
+                }
+              }}
               sx={{
                 borderRadius: 2,
                 mb: 0.5,
@@ -1290,39 +1299,79 @@ function PremiumAdminDashboard() {
 }
 
 export default function AdminPage() {
-  const { userId, isLoaded } = useAuth()
-  const { user, isLoaded: userLoaded } = useUser()
-  const { signOut } = useClerk()
+  const { userId } = useAuth()
+  const { user, isLoaded } = useUser()
   const router = useRouter()
+  const { signOut } = useClerk()
+  const [checking, setChecking] = useState(true)
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
 
   useEffect(() => {
-    // Wait for both auth and user data to be loaded
-    if (isLoaded && userLoaded) {
-      if (!userId) {
-        router.push('/sign-in')
-        return
-      }
-
-      // Wait a bit longer for user data to be fully loaded
-      const checkAccess = () => {
-        if (user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL) {
-          setLoading(false)
-          setAccessDenied(false)
-        } else if (user?.primaryEmailAddress?.emailAddress) {
-          // User email is loaded but not admin
-          setAccessDenied(true)
-          setLoading(false)
-        } else {
-          // User email not loaded yet, wait a bit more
-          setTimeout(checkAccess, 500)
+    const checkUserRole = async () => {
+      if (isLoaded && user) {
+        const email = user.emailAddresses[0]?.emailAddress
+        
+        // CRITICAL: Super admin should ONLY access via admin.localhost:3000/super-admin
+        if (email === ADMIN_EMAIL) {
+          // Redirect to proper super admin subdomain
+          const currentHost = window.location.hostname
+          if (currentHost.includes('localhost')) {
+            window.location.href = 'http://admin.localhost:3000/super-admin'
+          } else {
+            window.location.href = 'https://admin.glambooking.com/super-admin'
+          }
+          return
         }
+        
+        // Check if accessing from white-label subdomain
+        try {
+          const response = await fetch('/api/whitelabel/business-id')
+          if (response.ok) {
+            const data = await response.json()
+            if (data.businessId) {
+              // Redirect to partner admin page based on subdomain
+              console.log('Redirecting to partner admin:', data.businessId)
+              router.push(`/admin/${data.businessId}`)
+              return
+            }
+          }
+        } catch (error) {
+          console.error('Error checking subdomain:', error)
+        }
+        
+        // Fallback: Check if white-label partner owner via business dashboard
+        try {
+          const response = await fetch('/api/business/dashboard')
+          if (response.ok) {
+            const data = await response.json()
+            if (data.business && data.business.isWhiteLabel) {
+              // Redirect to partner admin page
+              router.push(`/admin/${data.business.id}`)
+              return
+            }
+          }
+        } catch (error) {
+          console.error('Error checking user role:', error)
+        }
+        
+        // Not authorized
+        router.push('/unauthorized')
       }
-
-      checkAccess()
     }
-  }, [isLoaded, userLoaded, userId, user, router])
+    
+    checkUserRole()
+  }, [isLoaded, user, router])
+
+  if (!isLoaded || checking) {
+    return (
+      <ThemeProvider theme={adminTheme}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+          <LinearProgress sx={{ width: '200px' }} />
+        </Box>
+      </ThemeProvider>
+    )
+  }
 
   if (accessDenied) {
     return (

@@ -27,9 +27,10 @@ export async function POST(req: NextRequest) {
 
     // Verify business exists and is active
     const business = await prisma.business.findUnique({
-      where: { 
-        id: businessId,
-        isActive: true
+      where: { id: businessId },
+      include: {
+        services: true,
+        whitelabelConfig: true
       }
     })
 
@@ -95,9 +96,15 @@ export async function POST(req: NextRequest) {
       }, { status: 409 })
     }
 
-    // Calculate amounts (5% platform fee, 95% to business)
+    // Calculate amounts - customer pays service price only
+    // For white-label: Platform takes 1% (white-label absorbs rest)
+    // For standard: Platform takes 5% (includes Stripe fees)
     const totalAmountPence = Math.round(Number(totalAmount) * 100)
-    const platformFee = Math.round(totalAmountPence * 0.05)
+    const isWhiteLabel = business.isWhiteLabel
+    const platformFeeRate = isWhiteLabel
+      ? (parseFloat(business.whitelabelConfig?.platformFeePercentage?.toString() || '1.0') / 100)
+      : 0.05
+    const platformFee = Math.round(totalAmountPence * platformFeeRate)
     const businessAmount = totalAmountPence - platformFee
 
     // Create Stripe Checkout Session

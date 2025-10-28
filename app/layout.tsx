@@ -21,15 +21,29 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+
+  const appShell = (
+    <html lang="en">
+      <body className={`${inter.variable} ${poppins.variable} font-sans`}>
+        {children}
+      </body>
+    </html>
+  )
+
+  if (!publishableKey) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(
+        'ClerkProvider disabled because NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is missing. ' +
+          'Authentication is bypassed for local development.'
+      )
+    }
+    return appShell
+  }
+
   return (
-    <ClerkProvider
-      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-    >
-      <html lang="en">
-        <body className={`${inter.variable} ${poppins.variable} font-sans`}>
-          {children}
-        </body>
-      </html>
+    <ClerkProvider publishableKey={publishableKey}>
+      {appShell}
     </ClerkProvider>
   )
 }

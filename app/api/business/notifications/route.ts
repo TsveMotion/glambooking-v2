@@ -148,9 +148,37 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 50) // Limit to 50 most recent
 
+    type NotificationReadStatusDelegate = {
+      findMany: (args: any) => Promise<Array<{ notificationId: string }>>
+    }
+
+    const notificationReadStatus = (prisma as any)
+      .notificationReadStatus as NotificationReadStatusDelegate | undefined
+
+    let notificationsWithReadState = allNotifications
+
+    if (notificationReadStatus) {
+      const notificationIds = allNotifications.map((n) => n.id)
+      const readStatuses = await notificationReadStatus.findMany({
+        where: {
+          userId: user.id,
+          notificationId: {
+            in: notificationIds,
+          },
+        },
+      })
+
+      const readMap = new Map(readStatuses.map((status) => [status.notificationId, true]))
+
+      notificationsWithReadState = allNotifications.map((notification) => ({
+        ...notification,
+        read: readMap.get(notification.id) ?? notification.read ?? false,
+      }))
+    }
+
     return NextResponse.json({ 
-      notifications: allNotifications,
-      unreadCount: allNotifications.filter(n => !n.read).length
+      notifications: notificationsWithReadState,
+      unreadCount: notificationsWithReadState.filter(n => !n.read).length
     })
   } catch (error) {
     console.error('Error fetching notifications:', error)
@@ -169,11 +197,79 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { notificationId, action } = await req.json()
+    const { notificationId, action, notificationIds } = await req.json()
 
-    // For now, we'll just return success since we're not storing notification read states
-    // In a real app, you'd store notification read states in the database
-    
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { id: true },
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    type NotificationReadStatusDelegate = {
+      upsert: (args: any) => Promise<unknown>
+      createMany: (args: any) => Promise<unknown>
+      updateMany: (args: any) => Promise<unknown>
+    }
+
+    const notificationReadStatus = (prisma as any)
+      .notificationReadStatus as NotificationReadStatusDelegate | undefined
+
+    if (!notificationReadStatus) {
+      console.warn('NotificationReadStatus delegate unavailable – did you run `prisma migrate` & `prisma generate`?')
+      return NextResponse.json({ success: false, requiresMigration: true })
+    }
+
+    if (action === 'mark_read') {
+      if (!notificationId) {
+        return NextResponse.json({ error: 'Notification ID is required' }, { status: 400 })
+      }
+
+      await notificationReadStatus.upsert({
+        where: {
+          userId_notificationId: {
+            userId: user.id,
+            notificationId,
+          },
+        },
+        create: {
+          userId: user.id,
+          notificationId,
+          readAt: new Date(),
+        },
+        update: {
+          readAt: new Date(),
+        },
+      })
+    } else if (action === 'mark_all_read') {
+      if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+        return NextResponse.json({ success: true })
+      }
+
+      await Promise.all(
+        notificationIds.map((id: string) =>
+          notificationReadStatus.upsert({
+            where: {
+              userId_notificationId: {
+                userId: user.id,
+                notificationId: id,
+              },
+            },
+            create: {
+              userId: user.id,
+              notificationId: id,
+              readAt: new Date(),
+            },
+            update: {
+              readAt: new Date(),
+            },
+          })
+        )
+      )
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error updating notification:', error)

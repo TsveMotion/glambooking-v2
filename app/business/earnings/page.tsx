@@ -127,7 +127,7 @@ export default function EarningsPage() {
                 {fundsData.availableFunds.bookingsCount} completed bookings
               </p>
               <p className="text-xs text-gray-500">
-                Platform fee ({fundsData.feePercentage}%): £{fundsData.availableFunds.platformFees.toFixed(2)}
+                Platform fee ({fundsData.feePercentage}% - includes Stripe fees): £{fundsData.availableFunds.platformFees.toFixed(2)}
               </p>
             </div>
           </CardContent>
@@ -259,7 +259,8 @@ export default function EarningsPage() {
               <h3 className="font-semibold text-gray-900 mb-2">How Withdrawals Work</h3>
               <ul className="text-sm text-gray-600 space-y-1">
                 <li>• Funds become available immediately after marking a booking as completed</li>
-                <li>• Platform fee of {fundsData.feePercentage}% is deducted from each booking</li>
+                <li>• Platform fee of {fundsData.feePercentage}% is deducted from each booking (includes Stripe processing fees)</li>
+                <li>• Customers pay the service price only - no extra fees added</li>
                 <li>• You can withdraw available funds at any time</li>
                 <li>• Withdrawals are processed within 1-3 business days</li>
               </ul>

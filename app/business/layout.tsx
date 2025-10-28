@@ -232,11 +232,23 @@ export default function BusinessLayout({ children }: BusinessLayoutProps) {
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-glam-pink focus:border-transparent"
                 />
               </div>
-              <Button variant="ghost" size="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push('/business/notifications')}
+                title="Notifications"
+              >
                 <Bell className="w-5 h-5" />
+                <span className="sr-only">View notifications</span>
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push('/business/profile')}
+                title="Profile"
+              >
                 <UserCircle className="w-5 h-5" />
+                <span className="sr-only">Open profile</span>
               </Button>
               <Button 
                 variant="ghost" 

@@ -20,6 +20,7 @@ model User {
   businesses      Business[]
   staff           Staff[]
   teamInvitations TeamInvitation[]
+  notificationReadStatuses NotificationReadStatus[]
 
   @@map("users")
 }
@@ -39,13 +40,16 @@ model Business {
   ownerId              String
   stripeAccountId      String?
   stripeOnboarded      Boolean                @default(false)
-  bookingFeePercentage Decimal                @default(10.0) @db.Decimal(4, 2)
+  bookingFeePercentage Decimal                @default(5.0) @db.Decimal(4, 2)
   maxStaff             Int                    @default(1)
   plan                 String                 @default("free")
   planEndDate          DateTime?
   planStartDate        DateTime               @default(now())
   stripeCustomerId     String?
   stripeSubscriptionId String?
+  // White-label fields
+  isWhiteLabel         Boolean                @default(false)
+  whitelabelConfig     WhiteLabelConfig?
   analytics            Analytics[]
   bookings             Booking[]
   customization        BusinessCustomization?
@@ -264,6 +268,49 @@ model TeamInvitation {
 
   @@unique([email, businessId])
   @@map("team_invitations")
+}
+
+model NotificationReadStatus {
+  userId         String
+  notificationId String
+  readAt         DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, notificationId])
+  @@map("notification_read_statuses")
+}
+
+model WhiteLabelConfig {
+  id                    String   @id @default(cuid())
+  businessId            String   @unique
+  // Domain configuration
+  customDomain          String?  @unique
+  subdomain             String?  @unique
+  // Branding
+  brandName             String?
+  logoUrl               String?
+  faviconUrl            String?
+  primaryColor          String   @default("#E91E63")
+  secondaryColor        String   @default("#FFD700")
+  accentColor           String   @default("#333333")
+  fontFamily            String   @default("Inter")
+  // Pricing
+  platformFeePercentage Decimal  @default(1.0) @db.Decimal(4, 2)
+  monthlyFee            Decimal  @default(200.00) @db.Decimal(10, 2)
+  // Status
+  isActive              Boolean  @default(true)
+  // Billing
+  stripeSubscriptionId  String?
+  subscriptionStatus    String   @default("active")
+  nextBillingDate       DateTime?
+  // Metadata
+  features              Json?    // Custom features enabled for this white-label
+  settings              Json?    // Additional settings
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  business              Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("whitelabel_configs")
 }
 
 enum BookingStatus {

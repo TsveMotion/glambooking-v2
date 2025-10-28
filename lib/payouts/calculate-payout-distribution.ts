@@ -148,7 +148,9 @@ export async function calculatePayoutDistribution({
 
   for (const booking of bookings) {
     const amount = Number(booking.totalAmount)
-    const platformFee = amount * 0.1
+    // Platform fee is 5% which includes covering Stripe transaction fees (~1.5%)
+    // So net platform revenue after Stripe fees is ~3.5%
+    const platformFee = amount * 0.05
     const netAmount = amount - platformFee
 
     totalGross += amount

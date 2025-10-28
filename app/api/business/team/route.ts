@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
           ownerId: user.id,
           plan: 'free',
           maxStaff: 1,
-          bookingFeePercentage: 10.0
+          bookingFeePercentage: 5.0 // 5% includes Stripe fees
         } as any,
         include: {
           staff: {
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
           ownerId: user.id,
           plan: 'free',
           maxStaff: 1,
-          bookingFeePercentage: 10.0
+          bookingFeePercentage: 5.0 // 5% includes Stripe fees
         } as any,
         include: {
           staff: true

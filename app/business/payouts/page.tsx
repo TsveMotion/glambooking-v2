@@ -422,7 +422,7 @@ function PayoutsPage() {
                   <div>
                     <p className="text-sm font-medium text-gray-600">Platform Fees</p>
                     <p className="text-3xl font-bold text-gray-900">£{payoutData?.platformFees?.toFixed(2) || '0.00'}</p>
-                    <p className="text-xs text-gray-500 mt-1">10% of revenue</p>
+                    <p className="text-xs text-gray-500 mt-1">5% of revenue (includes Stripe fees)</p>
                     <p className="text-xs text-purple-600 mt-1 font-medium">
                       Staff earnings: £{payoutData?.staffEarnings?.toFixed(2) || '0.00'}
                     </p>
@@ -567,7 +567,7 @@ function PayoutsPage() {
                   Team Earnings Overview
                 </CardTitle>
                 <CardDescription>
-                  View how earnings are distributed among team members. Owner receives 100% of their bookings (minus platform fee). Staff receive 60% of their bookings.
+                  View how earnings are distributed among team members. Owner receives 100% of their bookings (minus 5% platform fee that includes Stripe fees). Staff receive 60% of their bookings by default.
                 </CardDescription>
               </div>
             </CardHeader>
@@ -773,8 +773,8 @@ function PayoutsPage() {
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    {payoutSettings.type === 'percentage_own' && 'Percentage of their own booking revenue (after platform fee)'}
-                    {payoutSettings.type === 'percentage_total' && 'Percentage of total business revenue (after platform fee)'}
+                    {payoutSettings.type === 'percentage_own' && 'Percentage of their own booking revenue (after 5% platform fee which includes Stripe fees)'}
+                    {payoutSettings.type === 'percentage_total' && 'Percentage of total business revenue (after 5% platform fee which includes Stripe fees)'}
                     {payoutSettings.type === 'weekly_fixed' && 'Fixed amount paid weekly regardless of bookings'}
                     {payoutSettings.type === 'daily_fixed' && 'Fixed amount paid per working day'}
                   </p>

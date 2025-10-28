@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { Calendar, Clock, DollarSign, User, Mail, Phone, ArrowLeft, Share2, Copy, Check } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { WhiteLabelBranding } from '@/components/whitelabel-branding'
 import { loadStripe } from '@stripe/stripe-js'
 
 // Initialize Stripe
@@ -298,60 +299,62 @@ export default function PublicBookingPage() {
   }
 
   return (
-    <div 
-      className="min-h-screen py-8 px-4"
-      style={{ 
-        backgroundColor: customization.backgroundColor,
-        fontFamily: customization.bodyFont
-      }}
-    >
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          {/* Preview Mode Indicator */}
-          {isPreviewMode && (
-            <div className="mb-4 bg-blue-100 border border-blue-300 rounded-lg p-3">
-              <p className="text-blue-800 text-sm font-medium">
-                🎨 <strong>Preview Mode:</strong> You're seeing real-time customization changes! 
-                <button
-                  onClick={() => {
-                    localStorage.removeItem('glambooking_preview_customization')
-                    setIsPreviewMode(false)
-                    window.location.reload()
-                  }}
-                  className="ml-2 underline hover:no-underline"
-                >
-                  Exit Preview
-                </button>
-              </p>
-            </div>
-          )}
-          
-          <div className="mb-4 flex justify-between items-center">
-            <button
-              onClick={() => window.history.back()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
-              style={{ 
-                borderColor: customization.primaryColor,
-                color: customization.primaryColor
-              }}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </button>
+    <>
+      <WhiteLabelBranding />
+      <div 
+        className="min-h-screen py-8 px-4"
+        style={{ 
+          backgroundColor: customization.backgroundColor,
+          fontFamily: customization.bodyFont
+        }}
+      >
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            {/* Preview Mode Indicator */}
+            {isPreviewMode && (
+              <div className="mb-4 bg-blue-100 border border-blue-300 rounded-lg p-3">
+                <p className="text-blue-800 text-sm font-medium">
+                  🎨 <strong>Preview Mode:</strong> You're seeing real-time customization changes! 
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('glambooking_preview_customization')
+                      setIsPreviewMode(false)
+                      window.location.reload()
+                    }}
+                    className="ml-2 underline hover:no-underline"
+                  >
+                    Exit Preview
+                  </button>
+                </p>
+              </div>
+            )}
             
-            <button
-              onClick={shareBookingPage}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
-              style={{ 
-                borderColor: customization.secondaryColor,
-                color: customization.secondaryColor
-              }}
-            >
-              <Share2 className="w-4 h-4" />
-              Share Page
-            </button>
-          </div>
+            <div className="mb-4 flex justify-between items-center">
+              <button
+                onClick={() => window.history.back()}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
+                style={{ 
+                  borderColor: customization.primaryColor,
+                  color: customization.primaryColor
+                }}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </button>
+              
+              <button
+                onClick={shareBookingPage}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
+                style={{ 
+                  borderColor: customization.secondaryColor,
+                  color: customization.secondaryColor
+                }}
+              >
+                <Share2 className="w-4 h-4" />
+                Share Page
+              </button>
+            </div>
           
           {customization.logoUrl && (
             <img 
@@ -768,6 +771,7 @@ export default function PublicBookingPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

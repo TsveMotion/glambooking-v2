@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { AddServiceModal } from '@/components/add-service-modal'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { WhiteLabelBranding } from '@/components/whitelabel-branding'
 import { 
   Calendar, 
   Users, 
@@ -108,15 +109,23 @@ function BusinessDashboard() {
 
   const getPlanLimits = (plan: string) => {
     switch (plan) {
-      case 'free': return { name: 'Free', fee: '10%' }
+      case 'free': return { name: 'Free', fee: '5%' }
       case 'starter': return { name: 'Starter', fee: '5%' }
       case 'professional': return { name: 'Professional', fee: '3%' }
       case 'enterprise': return { name: 'Enterprise', fee: '2%' }
-      default: return { name: 'Free', fee: '10%' }
+      default: return { name: 'Free', fee: '5%' }
     }
   }
 
   const planLimits = getPlanLimits(businessPlan)
+
+  const formatCurrency = (value: number | string | null | undefined) =>
+    new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(Number(value ?? 0) || 0)
 
   // Calculate real metrics from database data
   const calculateRealMetrics = () => {
@@ -172,19 +181,19 @@ function BusinessDashboard() {
   const realMetrics = calculateRealMetrics()
 
   return (
-    <div className="p-6">
+    <>
+      <WhiteLabelBranding />
+      <div className="p-6">
       {/* Transaction Fee Banner */}
       <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-blue-800">
-              <strong>Current Plan: {planLimits.name} • Transaction Fee: {planLimits.fee} per booking</strong>
+              <strong>Current Plan: {planLimits.name} • Platform Fee: {planLimits.fee} per booking (includes all transaction costs)</strong>
             </p>
-            {businessPlan === 'free' && (
-              <p className="text-xs text-blue-600 mt-1">
-                Upgrade to reduce your booking fees and unlock more features
-              </p>
-            )}
+            <p className="text-xs text-blue-600 mt-1">
+              Customers pay the service price only. Platform fee includes Stripe processing fees.
+            </p>
           </div>
           {businessPlan === 'free' && (
             <Button 
@@ -254,8 +263,8 @@ function BusinessDashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Today's Revenue</p>
-              <p className="text-3xl font-bold text-gray-900">£{metrics?.todayRevenue || 0}</p>
-              <p className="text-xs text-gray-500 mt-1">After {planLimits.fee} platform fee</p>
+              <p className="text-3xl font-bold text-gray-900">{formatCurrency(metrics?.todayRevenue)}</p>
+              <p className="text-xs text-gray-500 mt-1">Gross revenue (before {planLimits.fee} platform fee)</p>
             </div>
           </CardContent>
         </Card>
@@ -282,7 +291,7 @@ function BusinessDashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Monthly Revenue</p>
-              <p className="text-3xl font-bold text-gray-900">£{realMetrics.monthlyRevenue}</p>
+              <p className="text-3xl font-bold text-gray-900">{formatCurrency(metrics?.monthlyRevenue ?? realMetrics.monthlyRevenue)}</p>
               <p className="text-xs text-gray-500 mt-1">This month to date</p>
             </div>
           </CardContent>
@@ -769,6 +778,7 @@ function BusinessDashboard() {
 
       {/* Subscription modal removed - user has paid */}
     </div>
+    </>
   )
 }
 

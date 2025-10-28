@@ -50,7 +50,8 @@ export async function GET(req: NextRequest) {
       return sum + Number(booking.totalAmount)
     }, 0)
 
-    // Calculate platform fees
+    // Calculate platform fees (includes Stripe transaction fees)
+    // Customer pays service price only, platform fee is deducted from that
     const platformFeePercentage = Number(business.bookingFeePercentage) / 100
     const totalPlatformFees = totalAvailable * platformFeePercentage
     const netAmount = totalAvailable - totalPlatformFees
